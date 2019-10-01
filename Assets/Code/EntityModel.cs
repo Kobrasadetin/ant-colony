@@ -8,6 +8,11 @@ public class EntityModel:BasicModel
     private EntityModel carriedBy = null;
     private EntityModel carrying = null;
 
+    public virtual bool IsFood()
+    {
+        return false;
+    }
+
     public float Rotation { get => rotation; set => rotation = value; }
     public EntityModel CarriedBy
     {

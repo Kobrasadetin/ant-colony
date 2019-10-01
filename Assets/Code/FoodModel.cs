@@ -11,6 +11,11 @@ public class FoodModel : EntityModel
         this.Position = position;
     }
 
+    public override bool IsFood()
+    {
+        return true;
+    }
+
     public float NutritionValue { get => nutritionValue; set => nutritionValue = value; }
     public float PoisonValue { get => poisonValue; set => poisonValue = value; }
 }

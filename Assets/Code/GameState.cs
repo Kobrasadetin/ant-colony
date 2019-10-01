@@ -30,7 +30,8 @@ public class GameState
             AntModel ant = new AntModel(PlayerAnthill.Position);
             ant.RandomOrientation();
 
-            ant.MoveForward(Random.Range(0, Random.Range(0f, playerAnthill.Radius)));
+            ant.MoveForward(Random.Range(0, Random.Range( 0f, playerAnthill.Radius)));
+            ant.WalkingTarget = playerAnthill;
             ants.Add(ant);
         }
 
@@ -51,7 +52,7 @@ public class GameState
             {
                 antHomeActions(ant);
             }
-            ant.RotateRandom();
+            ant.DecideRotation();
             ant.WalkForward();
             ant.PheromoneActions(this);
         }
@@ -79,6 +80,27 @@ public class GameState
             }
         }
         return closest;
+    }
+
+    public List<PheromoneModel> findPheromonesInRange(Vector2 position, float range)
+    {
+        List<PheromoneModel> list = new List<PheromoneModel>();
+        if (Pheromones.Count == 0)
+        {
+            return list;
+        }
+        float treshold = range*range;
+        foreach (PheromoneModel phero in Pheromones)
+        {
+            //TODO space partition
+            Vector2 v = position - phero.Position;
+            float d2 = (v.x * v.x + v.y * v.y);
+            if (d2 < treshold)
+            {
+                list.Add(phero);
+            }
+        }
+        return list;
     }
 
     public void SpawnPheromone(PheromoneModel pheromone)
