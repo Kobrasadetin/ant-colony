@@ -4,12 +4,13 @@ using UnityEngine;
 
 public class GameState
 {
-    public const int INITIAL_ANTS = 10;
-    public const int INITIAL_FOOD = 10;
+    public const int INITIAL_ANTS = 16;
+    public const int INITIAL_FOOD = 50;
+    public const int RANDOM_PHEROMONES = 10;
     private AnthillModel playerAnthill;
     private List<AntModel> ants;
     private List<FoodModel> foods;
-    //private List<Repellent>
+    private List<PheromoneModel> pheromones;
     private int tickCounter = 0;
 
     public AnthillModel PlayerAnthill { get => playerAnthill; set => playerAnthill = value; }
@@ -43,10 +44,28 @@ public class GameState
     {
         foreach (AntModel ant in ants)
         {
+            pickUpFoods(ant);
             ant.RotateRandom();
             ant.MoveForward();
         }
         tickCounter++;
+    }
+
+    private void pickUpFoods(AntModel ant)
+    {
+        if (ant.Carrying == null)
+        {
+            foreach (FoodModel food in foods)
+            {
+                float dist = Vector2.Distance(ant.Position, food.Position) - ant.Radius - food.Radius;
+                if (dist < 0)
+                {
+                    ant.Carrying = food;
+                    break;
+                }
+
+            }
+        }
     }
 
     public int AntCount()

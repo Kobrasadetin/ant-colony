@@ -6,9 +6,10 @@ public class AntModel : BasicModel
 {
     public const float ANT_SPEED = 0.01f;
     public const float TURNING_SPEED = 0.1f;
+    public const float ANT_RADIUS = 0.05f;
+ 
 
-
-    public AntModel(Vector2 position) : base(0.05f)
+    public AntModel(Vector2 position) : base(ANT_RADIUS)
     {
         this.Position = position;
     }
@@ -20,13 +21,25 @@ public class AntModel : BasicModel
 
     public void MoveForward(float amount)
     {
-        Vector2 forwardVec = new Vector2(0f, amount);
-        Vector2 rotated = Util.rotateVector(forwardVec, Rotation);
+        Vector2 rotated = getPointInFront(amount);
         this.Position = Position + rotated;
     }
+
+    private Vector2 getPointInFront(float distance)
+    {
+        Vector2 forwardVec = new Vector2(0f, distance);
+        Vector2 rotated = Util.rotateVector(forwardVec, Rotation);
+        return rotated;
+    }
+
+
     public void MoveForward()
     {
         MoveForward(ANT_SPEED);
+        if (Carrying != null)
+        {
+            Carrying.Position = Position+getPointInFront(Radius+Carrying.Radius);
+        }
     }
 
     public void RotateRandom()
