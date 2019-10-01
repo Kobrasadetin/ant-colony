@@ -18,11 +18,15 @@ public class AntModel : BasicModel
         this.Rotation = Rotation + amount;
     }
 
-    public void MoveForward()
+    public void MoveForward(float amount)
     {
-        Vector2 forwardVec = new Vector2(0f, ANT_SPEED);
+        Vector2 forwardVec = new Vector2(0f, amount);
         Vector2 rotated = Util.rotateVector(forwardVec, Rotation);
         this.Position = Position + rotated;
+    }
+    public void MoveForward()
+    {
+        MoveForward(ANT_SPEED);
     }
 
     public void RotateRandom()
@@ -30,5 +34,10 @@ public class AntModel : BasicModel
         int direction = Random.Range(0, 2);
         float amount = direction == 0 ? -TURNING_SPEED : TURNING_SPEED;
         Rotate(amount);
+    }
+
+    public void RandomOrientation()
+    {
+        this.Rotation = Random.Range(-Mathf.PI, Mathf.PI);
     }
 }
