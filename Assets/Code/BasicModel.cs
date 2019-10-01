@@ -6,30 +6,12 @@ public class BasicModel
 {
     private float radius;
     private Vector2 position;
-    private float rotation;
-    private BasicModel carriedBy = null;
-    private BasicModel carrying = null;
 
     public float Radius { get => radius; set => radius = value; }
     public Vector2 Position { get => position; set => position = value; }
-    public float Rotation { get => rotation; set => rotation = value; }
-    public BasicModel CarriedBy
+
+    public bool IsInside(BasicModel largerEntity)
     {
-        get => carriedBy; set
-        {
-            if (CarriedBy != null)
-            {
-                CarriedBy.Carrying = null;
-            }
-            carriedBy = value;
-        }
+        return Vector2.Distance(largerEntity.Position, Position) < largerEntity.Radius;
     }
-
-    public BasicModel Carrying { get => carrying; set => carrying = value; }
-
-    public BasicModel(float radius)
-    {
-        this.radius = radius;
-    }
-
 }

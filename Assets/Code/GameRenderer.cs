@@ -5,18 +5,23 @@ using UnityEngine;
 public class GameRenderer : MonoBehaviour
 {
     public GameState gameState;
-    private Dictionary<BasicModel, RenderObject> modelMap;
+    private Dictionary<EntityModel, RenderObject> modelMap;
+    private Dictionary<PheromoneModel, Pheromone> pheroMap;
     public GameObject playerAnthillPrefab;
     public GameObject antPrefab;
     public GameObject[] foodObjects;
+    public GameObject pheromonePrefab;
     private Anthill playerAnthill;
     private List<RenderObject> renderObjects;
+    private List<Pheromone> pheromoneObjects;
 
     // Start is called before the first frame update
     void Start()
     {
-        modelMap = new Dictionary<BasicModel, RenderObject>();
+        modelMap = new Dictionary<EntityModel, RenderObject>();
+        pheroMap = new Dictionary<PheromoneModel, Pheromone> ();
         renderObjects = new List<RenderObject>();
+        pheromoneObjects = new List<Pheromone>();
         gameState = new GameState();
         playerAnthill = Instantiate(playerAnthillPrefab, this.transform).GetComponent<Anthill>();
         Debug.Log(playerAnthill);
@@ -71,7 +76,27 @@ public class GameRenderer : MonoBehaviour
                 newFood.updatePosition(foodModel);
             }
         }
-        //TODO remove garbagecollected;
+
+        //draw phero
+        Dictionary<Pheromone, bool> garbagePhero = pheromoneObjects.ToDictionary(x => x, x => true);
+        foreach (PheromoneModel pheroModel in gameState.Pheromones)
+        {
+            Pheromone outPhero;
+            if (pheroMap.TryGetValue(pheroModel, out outPhero))
+            {
+                garbagePhero[outPhero] = false;
+            }
+            else
+            {
+                // Found a new ant!
+                Pheromone newPhero = Instantiate(pheromonePrefab, this.transform).GetComponent<Pheromone>();
+                pheromoneObjects.Add(newPhero);
+                pheroMap.Add(pheroModel, newPhero);
+                newPhero.updatePositionBasic(pheroModel);
+            }
+        }
+
+        //TODO remove garbagecollected render&phero;
     }
 
 

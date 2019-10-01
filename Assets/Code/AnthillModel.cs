@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class AnthillModel: BasicModel
+public class AnthillModel: EntityModel
 {
     private int health;
 
@@ -12,4 +12,5 @@ public class AnthillModel: BasicModel
     {
 
     }
+
 }

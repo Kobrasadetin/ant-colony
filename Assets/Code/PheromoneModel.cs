@@ -2,17 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PheromoneModel : MonoBehaviour
+public class PheromoneModel : BasicModel
 {
-    // Start is called before the first frame update
-    void Start()
+    const float PHEROMONE_RADIUS = 0.1f;
+    private float homeDistance = 0.0f;
+    public PheromoneModel()
     {
-        
+        Radius = PHEROMONE_RADIUS;
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    public float HomeDistance { get => homeDistance; set => homeDistance = value; }
 }

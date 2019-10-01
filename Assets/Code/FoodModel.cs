@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class FoodModel : BasicModel
+public class FoodModel : EntityModel
 {
     private float nutritionValue;
     private float poisonValue;

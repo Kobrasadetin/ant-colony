@@ -2,12 +2,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class AntModel : BasicModel
+public class AntModel : EntityModel
 {
     public const float ANT_SPEED = 0.01f;
     public const float TURNING_SPEED = 0.1f;
     public const float ANT_RADIUS = 0.05f;
- 
+    public const float NEW_PHEROMONE_TRESHOLD = 0.15f;
+
+    private float homeDistanceMemory = 0.0f;
+
+    public float HomeDistanceMemory { get => homeDistanceMemory; set => homeDistanceMemory = value; }
 
     public AntModel(Vector2 position) : base(ANT_RADIUS)
     {
@@ -32,9 +36,14 @@ public class AntModel : BasicModel
         return rotated;
     }
 
-
-    public void MoveForward()
+    private void IncrementHomeDistance(float amount)
     {
+        HomeDistanceMemory += amount;
+    }
+
+    public void WalkForward()
+    {
+        IncrementHomeDistance(ANT_SPEED);
         MoveForward(ANT_SPEED);
         if (Carrying != null)
         {
@@ -52,5 +61,18 @@ public class AntModel : BasicModel
     public void RandomOrientation()
     {
         this.Rotation = Random.Range(-Mathf.PI, Mathf.PI);
+    }
+
+    internal void PheromoneActions(GameState state)
+    {
+        PheromoneModel closest = state.findNearestPheromone(Position);
+        float distance = closest == null ? float.MaxValue : (closest.Position - Position).magnitude;
+        if (distance > NEW_PHEROMONE_TRESHOLD)
+        {
+            PheromoneModel phero = new PheromoneModel();
+            phero.Position = Position;
+            phero.HomeDistance = homeDistanceMemory;
+            state.SpawnPheromone(phero);
+        }
     }
 }
