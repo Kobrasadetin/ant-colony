@@ -1,19 +1,22 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class GameRenderer : MonoBehaviour
 {
     public GameState gameState;
-    private Dictionary<BasicModel, Ant> antsMap;
+    private Dictionary<BasicModel, RenderObject> modelMap;
     public GameObject playerAnthillPrefab;
     public GameObject antPrefab;
+    public GameObject[] foodObjects;
     private Anthill playerAnthill;
-    private List<Ant> ants;
+    private List<RenderObject> renderObjects;
+
     // Start is called before the first frame update
     void Start()
     {
-        antsMap = new Dictionary<BasicModel, Ant>();
-        ants = new List<Ant>();
+        modelMap = new Dictionary<BasicModel, RenderObject>();
+        renderObjects = new List<RenderObject>();
         gameState = new GameState();
         playerAnthill = Instantiate(playerAnthillPrefab, this.transform).GetComponent<Anthill>();
         Debug.Log(playerAnthill);
@@ -23,31 +26,53 @@ public class GameRenderer : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (gameState == null) { Start(); };
         gameState.update();
         updateVisuals();
 
     }
     void updateVisuals()
     {
-        HashSet<Ant> garbageCollected = new HashSet<Ant>(ants);
-        Debug.Log(gameState.Ants);
+        Dictionary<RenderObject, bool> garbageCollected = renderObjects.ToDictionary(x => x, x => true);
+
+        //draw ants
         foreach (AntModel antModel in gameState.Ants) {
-            Ant outAnt;
-            if (antsMap.TryGetValue(antModel, out outAnt))
+            RenderObject outAnt;
+            if (modelMap.TryGetValue(antModel, out outAnt))
             {
-                Debug.Log(outAnt);
                 outAnt.updatePosition(antModel);
-                garbageCollected.Remove(outAnt);
+                garbageCollected[outAnt]=false;
             }
             else
             {
-                // Fond a new ant!
+                // Found a new ant!
                 Ant newAnt = Instantiate(antPrefab, this.transform).GetComponent<Ant>();
-                ants.Add(newAnt);
-                antsMap.Add(antModel, newAnt);
+                renderObjects.Add(newAnt);
+                modelMap.Add(antModel, newAnt);
                 newAnt.updatePosition(antModel);
+            }
+        }
+
+        //draw food
+        foreach (FoodModel foodModel in gameState.Foods)
+        {
+            RenderObject outFood;
+            if (modelMap.TryGetValue(foodModel, out outFood))
+            {
+                outFood.updatePosition(foodModel);
+                garbageCollected[outFood] = false;
+            }
+            else
+            {
+                // Found a new ant!
+                Food newFood = Instantiate(foodObjects[0], this.transform).GetComponent<Food>();
+                renderObjects.Add(newFood);
+                modelMap.Add(foodModel, newFood);
+                newFood.updatePosition(foodModel);
             }
         }
         //TODO remove garbagecollected;
     }
+
+
 }

@@ -6,9 +6,9 @@ public class FoodModel : BasicModel
 {
     private float nutritionValue;
     private float poisonValue;
-    public FoodModel(float radius) : base(radius)
+    public FoodModel(Vector2 position, float radius) : base(radius)
     {
-
+        this.Position = position;
     }
 
     public float NutritionValue { get => nutritionValue; set => nutritionValue = value; }
