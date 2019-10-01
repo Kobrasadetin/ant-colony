@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Ant : MonoBehaviour
+public class Ant : RenderObject
 {
-    // Start is called before the first frame update
+    /* Start is called before the first frame update
     void Start()
     {
         
@@ -14,5 +14,5 @@ public class Ant : MonoBehaviour
     void Update()
     {
         
-    }
+    }*/
 }
