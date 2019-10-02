@@ -25,7 +25,10 @@ public class Anthill : RenderObject
 		audioSource = gameObject.AddComponent<AudioSource>();
 	}
 
-	public void updateVisual(AnthillModel model){
+
+
+	public void updateVisual(AnthillModel model) {
+		
 		if (model.HealthChanged >0 ){
 			goodCounter = 0;
 			GoodSprite.SetActive(false);

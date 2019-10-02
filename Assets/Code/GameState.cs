@@ -4,21 +4,21 @@ using UnityEngine;
 
 public class GameState
 {
-    public const int INITIAL_ANTS = 32;
+    public const int INITIAL_ANTS = 42;
     public const int INITIAL_FOOD = 0;
     public const int RANDOM_PHEROMONES = 10;
     private AnthillModel playerAnthill;
     private List<AntModel> ants;
     private List<FoodModel> foods;
 	private List<SourceModel> sources;
-	private List<PheromoneModel> pheromones;
+	private SpacePartitionList<PheromoneModel> pheromones;
     private int tickCounter = 0;
 
     public AnthillModel PlayerAnthill { get => playerAnthill; set => playerAnthill = value; }
     public List<AntModel> Ants { get => ants; set => ants = value; }
     public int TickCounter { get => tickCounter; set => tickCounter = value; }
     public List<FoodModel> Foods { get => foods; set => foods = value; }
-    public List<PheromoneModel> Pheromones { get => pheromones; set => pheromones = value; }
+    public SpacePartitionList<PheromoneModel> Pheromones { get => pheromones; set => pheromones = value; }
 
     public GameState()
     {
@@ -26,7 +26,7 @@ public class GameState
         ants = new List<AntModel>();
         foods = new List<FoodModel>();
 		sources = new List<SourceModel>();
-		Pheromones = new List<PheromoneModel>();
+		Pheromones = new SpacePartitionList<PheromoneModel>();
         for (int i = 0; i < INITIAL_ANTS; i++)
         {
             AntModel ant = new AntModel(PlayerAnthill.Position);
@@ -54,7 +54,7 @@ public class GameState
 
     public void AddRepellantPheromone(Vector2 position)
     {
-        List<PheromoneModel> closeByPheromones = Search<PheromoneModel>.ObjectsInRange(Pheromones, position, 0.3f);
+        List<PheromoneModel> closeByPheromones = Pheromones.FindInRange(position, 0.3f);
             foreach(PheromoneModel pher in closeByPheromones)
             {
                 pheromones.Remove(pher);
@@ -89,18 +89,14 @@ public class GameState
             ant.WalkForward();
             ant.PheromoneActions(this);
         }
-		foreach (PheromoneModel phero in pheromones)
-		{
+		/*foreach (PheromoneModel phero in pheromones)
+		{TODO phero update
 			//phero.update();
-		}
+		}*/
 		tickCounter++;
         
     }
 
-    public PheromoneModel findNearestPheromone(Vector2 position)
-    {
-        return Search< PheromoneModel>.Nearest(Pheromones, position);
-    }
 	public FoodModel findNearestFood(Vector2 position)
 	{
 		return Search<FoodModel>.Nearest(Foods, position);
@@ -155,7 +151,7 @@ public class GameState
 
 	public List<PheromoneModel> findPheromonesInRange(Vector2 position, float range)
     {		
-        return Search<PheromoneModel>.ObjectsInRange(Pheromones, position, range);
+        return Pheromones.FindInRange(position, range);
     }
 
     public void SpawnPheromone(PheromoneModel pheromone)
