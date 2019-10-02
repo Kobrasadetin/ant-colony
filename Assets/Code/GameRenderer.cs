@@ -14,8 +14,11 @@ public class GameRenderer : MonoBehaviour
     private Anthill playerAnthill;
     private List<RenderObject> renderObjects;
     private List<Pheromone> pheromoneObjects;
+    private int clickDuration = 0;
+    AudioSource musicPlayer;
+    AudioSource sprayPlayer;
 
-	private void gameStateInitializer(GameState gameState)
+    private void gameStateInitializer(GameState gameState)
 	{
 		FoodGenerator[] foodGenerators = GetComponentsInChildren<FoodGenerator>();
 		foreach(FoodGenerator generator in foodGenerators){
@@ -28,6 +31,11 @@ public class GameRenderer : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        musicPlayer = gameObject.AddComponent<AudioSource>();
+        sprayPlayer = gameObject.AddComponent<AudioSource>();
+        musicPlayer.clip = Resources.Load("sound/music") as AudioClip;
+        sprayPlayer.clip = Resources.Load("sound/spray1") as AudioClip;
+        musicPlayer.Play();
         modelMap = new Dictionary<EntityModel, RenderObject>();
         pheroMap = new Dictionary<PheromoneModel, Pheromone> ();
         renderObjects = new List<RenderObject>();
@@ -42,6 +50,24 @@ public class GameRenderer : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (!musicPlayer.isPlaying)
+        {
+            musicPlayer.Play();
+        }
+        if (Input.GetMouseButton(0))
+        {
+            clickDuration += 1;
+        }
+        if (Input.GetMouseButtonUp(0))
+        {
+            if (clickDuration < 3)
+            {
+                Vector3 pz = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                gameState.AddRepellantPheromone(pz);
+                sprayPlayer.Play();
+            }
+            clickDuration = 0;
+        }
         if (gameState == null) { Start(); };
         gameState.update();
         updateVisuals();
@@ -107,6 +133,7 @@ public class GameRenderer : MonoBehaviour
                 pheromoneObjects.Add(newPhero);
                 pheroMap.Add(pheroModel, newPhero);
                 newPhero.updatePositionBasic(pheroModel);
+                newPhero.setRepellant(pheroModel.IsRepellant);
             }
         }
 

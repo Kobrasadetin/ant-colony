@@ -52,6 +52,21 @@ public class GameState
 
     }
 
+    public void AddRepellantPheromone(Vector2 position)
+    {
+        List<PheromoneModel> closeByPheromones = Search<PheromoneModel>.ObjectsInRange(Pheromones, position, 0.3f);
+            foreach(PheromoneModel pher in closeByPheromones)
+            {
+                pheromones.Remove(pher);
+            }
+        PheromoneModel newPhero = new PheromoneModel();
+        newPhero.Position = position;
+        newPhero.IsRepellant = true;
+        newPhero.HomeDistance = float.MaxValue;
+        newPhero.FoodDistance = float.MaxValue;
+        pheromones.Add(newPhero);
+    }
+
 	public void AddFoodSource(Vector2 position, float nutrition, float poison){
 		sources.Add(new SourceModel(position, nutrition, poison));
 	}

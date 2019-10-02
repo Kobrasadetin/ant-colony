@@ -159,6 +159,7 @@ public class AntModel : EntityModel
 				walkingTarget = foodDirection;
 			}
 		}
+       
 	}
 
 	private void FindInfoPheromone(List<PheromoneModel> closebyPheromones, out PheromoneModel closest, out PheromoneModel home, out PheromoneModel food)

@@ -9,6 +9,7 @@ public class PheromoneModel : BasicModel
 	const float FOOD_DRIFT_SPEED = 0.002f;
 	private float homeDistance = 0.0f;
     private float foodDistance = 0.0f;
+    public bool IsRepellant = false;
 
 
     public PheromoneModel()

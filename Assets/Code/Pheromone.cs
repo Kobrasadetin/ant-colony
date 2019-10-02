@@ -15,4 +15,12 @@ public class Pheromone : RenderObject
     {
         
     }
+    public void setRepellant(bool repellant)
+    {
+        if (repellant)
+        {
+            this.GetComponent<SpriteRenderer>().color = new Color(1f, 0f, 0f, .8f);
+            this.transform.localScale *= 4f;
+        }
+    }
 }
