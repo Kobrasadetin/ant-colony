@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class GameState
 {
-    public const int INITIAL_ANTS = 20;
+    public const int INITIAL_ANTS = 32;
     public const int INITIAL_FOOD = 0;
     public const int RANDOM_PHEROMONES = 10;
     private AnthillModel playerAnthill;
