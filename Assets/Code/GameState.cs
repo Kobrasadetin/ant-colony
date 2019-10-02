@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class GameState
 {
-    public const int INITIAL_ANTS = 16;
-    public const int INITIAL_FOOD = 50;
+    public const int INITIAL_ANTS = 80;
+    public const int INITIAL_FOOD = 0;
     public const int RANDOM_PHEROMONES = 10;
     private AnthillModel playerAnthill;
     private List<AntModel> ants;
@@ -51,6 +51,10 @@ public class GameState
 		}
 
     }
+
+	public void AddFoodSource(Vector2 position){
+		sources.Add(new SourceModel(position));
+	}
 
     public void update()
     {

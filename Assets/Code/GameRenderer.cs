@@ -15,6 +15,16 @@ public class GameRenderer : MonoBehaviour
     private List<RenderObject> renderObjects;
     private List<Pheromone> pheromoneObjects;
 
+	private void gameStateInitializer(GameState gameState)
+	{
+		FoodGenerator[] foodGenerators = GetComponentsInChildren<FoodGenerator>();
+		foreach(FoodGenerator generator in foodGenerators){
+			Vector2 pos = new Vector2(generator.transform.position.x, generator.transform.position.y);
+			gameState.AddFoodSource(pos + new Vector2(0.15f, 0.0f));
+			gameState.AddFoodSource(pos - new Vector2(0.15f, 0.0f));
+		}
+	}
+
     // Start is called before the first frame update
     void Start()
     {
@@ -23,7 +33,8 @@ public class GameRenderer : MonoBehaviour
         renderObjects = new List<RenderObject>();
         pheromoneObjects = new List<Pheromone>();
         gameState = new GameState();
-        playerAnthill = Instantiate(playerAnthillPrefab, this.transform).GetComponent<Anthill>();
+		gameStateInitializer(gameState);
+		playerAnthill = Instantiate(playerAnthillPrefab, this.transform).GetComponent<Anthill>();
         Debug.Log(playerAnthill);
         playerAnthill.transform.position = gameState.PlayerAnthill.Position;
     }
