@@ -21,7 +21,7 @@ public class Anthill : RenderObject
 	{
 		base.Start();
 		good = Resources.Load("sound/positive") as AudioClip;
-		bad = Resources.Load("sound/positive") as AudioClip;
+		bad = Resources.Load("sound/negative") as AudioClip;
 		audioSource = gameObject.AddComponent<AudioSource>();
 	}
 
@@ -38,7 +38,7 @@ public class Anthill : RenderObject
 		}
 		if (model.HealthChanged < 0)
 		{
-			goodCounter = 0;
+			badCounter = 0;
 			BadSprite.SetActive(false);
 			BadSprite.SetActive(true);
 			soundQueue.Push(bad);

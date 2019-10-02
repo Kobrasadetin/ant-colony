@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class FoodGenerator : MonoBehaviour
 {
+	public float poisonValue = 0f;
     // Start is called before the first frame update
     void Start()
     {

@@ -20,8 +20,8 @@ public class GameRenderer : MonoBehaviour
 		FoodGenerator[] foodGenerators = GetComponentsInChildren<FoodGenerator>();
 		foreach(FoodGenerator generator in foodGenerators){
 			Vector2 pos = new Vector2(generator.transform.position.x, generator.transform.position.y);
-			gameState.AddFoodSource(pos + new Vector2(0.15f, 0.0f));
-			gameState.AddFoodSource(pos - new Vector2(0.15f, 0.0f));
+			gameState.AddFoodSource(pos + new Vector2(0.15f, 0.0f), 1.0f, generator.poisonValue);
+			gameState.AddFoodSource(pos - new Vector2(0.15f, 0.0f), 1.0f, generator.poisonValue);
 		}
 	}
 

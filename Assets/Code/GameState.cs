@@ -46,14 +46,14 @@ public class GameState
 			}
 
 			//Foods.Add(new FoodModel(position, 0.05f));
-			sources.Add(new SourceModel(position));
+			sources.Add(new SourceModel(position, 1.0f, 0.0f));
 
 		}
 
     }
 
-	public void AddFoodSource(Vector2 position){
-		sources.Add(new SourceModel(position));
+	public void AddFoodSource(Vector2 position, float nutrition, float poison){
+		sources.Add(new SourceModel(position, nutrition, poison));
 	}
 
     public void update()
