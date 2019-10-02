@@ -26,7 +26,7 @@ public class EntityModel:BasicModel
         }
     }
 
-    public EntityModel Carrying { get => carrying; set => carrying = value; }
+    public EntityModel Carrying { get => carrying; protected set => carrying = value; }
 
     public EntityModel(float radius)
     {

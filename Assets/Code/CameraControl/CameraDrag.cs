@@ -5,8 +5,14 @@ public class CameraDrag : MonoBehaviour
     private Vector3 dragOrigin; //Where are we moving?
     private Vector3 clickOrigin = Vector3.zero; //Where are we starting?
     private Vector3 basePos = Vector3.zero; //Where should the camera be initially?
+	private Camera cam;
 
-    void Update()
+	private void Start()
+	{
+		cam = Camera.main;
+	}
+
+	void Update()
     {
         if (Input.GetMouseButton(0))
         {
@@ -24,6 +30,6 @@ public class CameraDrag : MonoBehaviour
             return;
         }
 
-        transform.position = new Vector3(basePos.x + ((clickOrigin.x - dragOrigin.x) * .01f), basePos.y + ((clickOrigin.y - dragOrigin.y) * .01f), -10);
+        transform.position = new Vector3(basePos.x + ((clickOrigin.x - dragOrigin.x) * .008f * cam.orthographicSize), basePos.y + ((clickOrigin.y - dragOrigin.y) * .008f * cam.orthographicSize), -10);
     }
 }

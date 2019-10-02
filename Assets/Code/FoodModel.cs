@@ -6,9 +6,11 @@ public class FoodModel : EntityModel
 {
     private float nutritionValue;
     private float poisonValue;
-    public FoodModel(Vector2 position, float radius) : base(radius)
+	public const float DEFAULT_RADIUS = 0.05f;
+
+	public FoodModel(Vector2 position, float radius) : base(radius)
     {
-        this.Position = position;
+        this.Position = new Vector2(position.x, position.y);
     }
 
     public override bool IsFood()

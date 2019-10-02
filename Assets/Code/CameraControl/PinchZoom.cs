@@ -4,7 +4,12 @@ public class PinchZoom : MonoBehaviour
 {
     public float perspectiveZoomSpeed = 0.5f;        // The rate of change of the field of view in perspective mode.
     public float orthoZoomSpeed = 0.5f;        // The rate of change of the orthographic size in orthographic mode.
-    private Camera mainCamera;
+	public float scrollSensitivity = 1f;
+	private float currentSpeed = 0f;
+	private float damping = 0.67f;
+
+	private Camera mainCamera;
+	
 
     private void Start()
     {
@@ -13,8 +18,19 @@ public class PinchZoom : MonoBehaviour
 
     void Update()
     {
-        // If there are two touches on the device...
-        if (Input.touchCount == 2)
+		if (Input.GetAxis("Mouse ScrollWheel") != 0)
+		{
+			float oldsize = mainCamera.orthographicSize;
+			mainCamera.orthographicSize -= Input.GetAxis("Mouse ScrollWheel") * scrollSensitivity * mainCamera.orthographicSize;
+			currentSpeed =  mainCamera.orthographicSize - oldsize;
+		} else {
+			currentSpeed *= damping;
+			mainCamera.orthographicSize += currentSpeed;
+		}
+
+		mainCamera.orthographicSize = Mathf.Max(mainCamera.orthographicSize, 0.1f);
+		// If there are two touches on the device...
+		if (Input.touchCount == 2)
         {
             // Store both touches.
             Touch touchZero = Input.GetTouch(0);

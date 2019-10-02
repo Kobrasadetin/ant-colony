@@ -96,8 +96,16 @@ public class GameRenderer : MonoBehaviour
             }
         }
 
-        //TODO remove garbagecollected render&phero;
-    }
+		//TODO remove garbagecollected render&phero;
+		foreach (KeyValuePair<RenderObject, bool> entry in garbageCollected)
+		{
+			if (entry.Value == true){
+				renderObjects.Remove(entry.Key);
+				entry.Key.remove();
+			}
+		}
+
+	}
 
 
 }
