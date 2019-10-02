@@ -30,6 +30,6 @@ public class CameraDrag : MonoBehaviour
             return;
         }
 
-        transform.position = new Vector3(basePos.x + ((clickOrigin.x - dragOrigin.x) * .008f * cam.orthographicSize), basePos.y + ((clickOrigin.y - dragOrigin.y) * .008f * cam.orthographicSize), -10);
+        transform.position = new Vector3(basePos.x + ((clickOrigin.x - dragOrigin.x) * .008f * cam.orthographicSize), basePos.y + ((clickOrigin.y - dragOrigin.y) * .008f * cam.orthographicSize), cam.transform.position.z);
     }
 }

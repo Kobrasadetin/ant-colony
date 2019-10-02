@@ -51,8 +51,11 @@ public class GameRenderer : MonoBehaviour
     {
         Dictionary<RenderObject, bool> garbageCollected = renderObjects.ToDictionary(x => x, x => true);
 
-        //draw ants
-        foreach (AntModel antModel in gameState.Ants) {
+		//anthill
+		playerAnthill.updateVisual(gameState.PlayerAnthill);
+
+		//draw ants
+		foreach (AntModel antModel in gameState.Ants) {
             RenderObject outAnt;
             if (modelMap.TryGetValue(antModel, out outAnt))
             {

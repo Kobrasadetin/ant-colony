@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class GameState
 {
-    public const int INITIAL_ANTS = 80;
+    public const int INITIAL_ANTS = 20;
     public const int INITIAL_FOOD = 0;
     public const int RANDOM_PHEROMONES = 10;
     private AnthillModel playerAnthill;
@@ -58,6 +58,7 @@ public class GameState
 
     public void update()
     {
+		playerAnthill.update();
 		foreach (SourceModel source in sources){
 			source.update(this);
 		}
@@ -161,6 +162,15 @@ public class GameState
 			ant.Drop();
 			if (dropped.IsFood()){
 				FoodModel food = (FoodModel)dropped;
+				if (food.NutritionValue > food.PoisonValue){
+					//good food
+					playerAnthill.Health += 1;
+				}
+				if (food.NutritionValue < food.PoisonValue)
+				{
+					//bad food
+					playerAnthill.Health -= 1;
+				}
 				foods.Remove(food);
 			}
             //TODO deal with dropped food

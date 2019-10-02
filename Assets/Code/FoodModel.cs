@@ -10,7 +10,9 @@ public class FoodModel : EntityModel
 
 	public FoodModel(Vector2 position, float radius) : base(radius)
     {
-        this.Position = new Vector2(position.x, position.y);
+		this.nutritionValue = 1.0f;
+		this.poisonValue = 0.0f;
+		this.Position = new Vector2(position.x, position.y);
     }
 
     public override bool IsFood()
