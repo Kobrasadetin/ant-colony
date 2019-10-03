@@ -7,9 +7,9 @@ public class SpacePartitionList<T> : IEnumerable where T : IObjectModel
 {
 	private const float X_HALF_SIZE = 20.0f;
 	private const float Y_HALF_SIZE = 20.0f;
-	private const int X_BUCKETS = 32;
-	private const int Y_BUCKETS = 32;
-	private const uint OVERFLOW_BITS = 0b1111_1111_1111_1111_1111_1110_0000;
+	private const int X_BUCKETS = 64;
+	private const int Y_BUCKETS = 64;
+	private const uint OVERFLOW_BITS = 0b1111_1111_1111_1111_1111_1100_0000;
 	private const float BUCKET_SIZE_X = X_HALF_SIZE * 2 / X_BUCKETS;
 	private const float BUCKET_SIZE_Y = Y_HALF_SIZE * 2 / Y_BUCKETS;
 	private const float X_STAGGER = BUCKET_SIZE_X / 2;
@@ -22,9 +22,11 @@ public class SpacePartitionList<T> : IEnumerable where T : IObjectModel
 	private readonly List<T>[][] grid_buckets;
 	private readonly List<T>[][] grid_bucketsL;
 	private List<T> globalList = new List<T>();
+	private List<T> swapBuffer = new List<T>();
 
 	private List<T>[] searchBuckets = new List<T>[8];
 	private int searchBucketsIndex;
+	private List<T> resultBuffer = new List<T>();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private uint find(float pos, float rangeStart, float stepReciproc, out bool outOfBound)
@@ -109,6 +111,11 @@ public class SpacePartitionList<T> : IEnumerable where T : IObjectModel
 
 	public void Remove(T model)
 	{
+		RemoveFromBucket(model);
+		globalList.Remove(model);
+	}
+
+	private void RemoveFromBucket(T model){
 		Vector2 pos = model.Position;
 		uint xBucket = find(pos.x, -X_HALF_SIZE, BS_RECIPROCAL_X, out bool outOfBoundsX);
 		uint yBucket = find(pos.y, -Y_HALF_SIZE, BS_RECIPROCAL_Y, out bool outOfBoundsY);
@@ -120,30 +127,58 @@ public class SpacePartitionList<T> : IEnumerable where T : IObjectModel
 		{
 			buckets[yBucket * X_BUCKETS + xBucket].Remove(model);
 		}
-		globalList.Remove(model);
 	}
 
+	public void RemoveAll(System.Predicate<T> predicate)
+	{
+		swapBuffer.Clear();
+		swapBuffer.Capacity = globalList.Capacity;
+		foreach (T model in globalList)
+		{
+			if (!predicate.Invoke(model))
+			{
+				swapBuffer.Add(model);
+			}
+			else
+			{
+				RemoveFromBucket(model);
+			}
+		}
+		globalList.Clear();
+		globalList.AddRange(swapBuffer);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private int GridIndex(Vector2 position, out bool outOfBounds)
+	{
+
+		int xGrid = (int)((position.x + X_STAGGER + X_HALF_SIZE) * BS_RECIPROCAL_X);
+		int yGrid = (int)((position.y + Y_STAGGER + Y_HALF_SIZE) * BS_RECIPROCAL_Y);
+		outOfBounds = (xGrid < 0 || xGrid > X_BUCKETS || yGrid < 0 || yGrid > Y_BUCKETS);
+
+		return yGrid * (X_BUCKETS + 1) + xGrid;
+	}
 
 	public List<T> FindInRange(Vector2 position, float range)
 	{
 		searchBucketsIndex = 0;
-		List<T> result = new List<T>();
+		resultBuffer.Clear();
 		//TODO implement large ranges
 		if (range > Mathf.Min(BUCKET_SIZE_X, BUCKET_SIZE_Y))
 		{
 			Debug.LogError("Too long range search, max " + BUCKET_SIZE_X + ", " + BUCKET_SIZE_Y);
 		}
-		uint xGrid = find(position.x + X_STAGGER, -X_HALF_SIZE, BS_RECIPROCAL_X, out bool outOfBoundsX);
-		uint yGrid = find(position.y + Y_STAGGER, -Y_HALF_SIZE, BS_RECIPROCAL_Y, out bool outOfBoundsY);
+		bool isOutOfBounds;
+		int gridIndex = GridIndex(position, out isOutOfBounds);
 
-		if (outOfBoundsX || outOfBoundsY)
+		if (isOutOfBounds)
 		{
 			searchBuckets[0]=outOfBounds;
 			searchBucketsIndex = 1;
 		}
 		else
 		{
-			foreach (List<T> l in grid_buckets[yGrid * (X_BUCKETS + 1) + xGrid])
+			foreach (List<T> l in grid_buckets[gridIndex])
 			{
 				if (l.Count > 0)
 				{
@@ -164,12 +199,12 @@ public class SpacePartitionList<T> : IEnumerable where T : IObjectModel
 				float d2 = (x * x + y * y);
 				if (d2 < treshold)
 				{
-					result.Add(model);
+					resultBuffer.Add(model);
 				}
 			}
 
 		}
-		return result;
+		return resultBuffer;
 	}
 
 	public IEnumerator GetEnumerator()

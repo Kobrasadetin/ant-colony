@@ -63,8 +63,8 @@ public class GameRenderer : MonoBehaviour
 
     // Update is called once per frame
     void Update()
-    {
-        if (!musicPlayer.isPlaying)
+    {	
+		if (!musicPlayer.isPlaying)
         {
             musicPlayer.Play();
         }

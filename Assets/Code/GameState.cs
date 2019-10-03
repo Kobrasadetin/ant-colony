@@ -89,10 +89,11 @@ public class GameState
             ant.WalkForward();
             ant.PheromoneActions(this);
         }
-		/*foreach (PheromoneModel phero in pheromones)
-		{TODO phero update
-			//phero.update();
-		}*/
+		foreach (PheromoneModel phero in pheromones)
+		{
+			phero.update();
+		}
+		pheromones.RemoveAll(pheromone => pheromone.IsOld());
 		tickCounter++;
         
     }

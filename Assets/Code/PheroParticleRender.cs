@@ -16,6 +16,15 @@ public class PheroParticleRender : MonoBehaviour
 	private NativeArray<PheroStruct> nativePheromones;
 	private NativeArray<ParticleSystem.Particle> jobResult;
 	private readonly ParticleSystem.Particle[] jobResultOutput = new ParticleSystem.Particle[MAX_PARTICLE_COUNT];
+	private bool incompleteFrame = false;
+
+	private enum state
+	{
+		IDLE,
+		QUEUED,
+		RENDERING,
+	}
+	private state currentState = state.IDLE;
 
 	private NativeArray<PheroStruct> NativePheromones
 	{
@@ -55,7 +64,7 @@ public class PheroParticleRender : MonoBehaviour
 					(p.FoodDistance + p.HomeDistance) * .5f,
 					p.FoodDistance * 0.1f,
 					p.HomeDistance * 0.1f,
-					0.5f);
+					p.Strength * 0.5f);
 			}
 		}
 	}
@@ -65,7 +74,7 @@ public class PheroParticleRender : MonoBehaviour
 
 		int count = pheromones.Length;
 		for (int i = 0; i < count; i++)
-		{		
+		{
 			PheroStruct p = pheromones[i];
 			target[i] = new ParticleSystem.Particle
 			{
@@ -75,11 +84,11 @@ public class PheroParticleRender : MonoBehaviour
 					r = (p.FoodDistance + p.HomeDistance) * .5f,
 					g = p.FoodDistance * 0.1f,
 					b = p.HomeDistance * 0.1f,
-					a = 0.5f
+					a = p.Strength * 0.5f
 				},
 				startSize = 0.3f,
 				remainingLifetime = 5,
-			};	
+			};
 		}
 	}
 
@@ -119,10 +128,28 @@ public class PheroParticleRender : MonoBehaviour
 	{
 		[ReadOnly]
 		public NativeArray<PheroStruct> input;
+		[WriteOnly]
 		public NativeArray<ParticleSystem.Particle> result;
 		void IJob.Execute()
 		{
-			UpdateParticles(input, result);
+			int count = input.Length;
+			for (int i = 0; i < count; i++)
+			{
+				PheroStruct p = input[i];
+				result[i] = new ParticleSystem.Particle
+				{
+					position = p.position,
+					startColor = new Color
+					{
+						r = (p.FoodDistance + p.HomeDistance) * .5f,
+						g = p.FoodDistance * 0.1f,
+						b = p.HomeDistance * 0.1f,
+						a = p.Strength * 0.5f
+					},
+					startSize = 0.3f,
+					remainingLifetime = 5,
+				};
+			}
 		}
 	}
 
@@ -131,6 +158,7 @@ public class PheroParticleRender : MonoBehaviour
 		public Vector2 position;
 		public float HomeDistance;
 		public float FoodDistance;
+		public float Strength;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static PheroStruct FromModel(PheromoneModel model)
 		{
@@ -139,35 +167,51 @@ public class PheroParticleRender : MonoBehaviour
 				HomeDistance = model.HomeDistance,
 				FoodDistance = model.FoodDistance,
 				position = model.Position,
+				Strength = model.Strength
 			};
 		}
 	}
 
 	public void PrepareUpdate(List<PheromoneModel> pheromones)
 	{
-		particleCount = Mathf.Min(pheromones.Count, MAX_PARTICLE_COUNT);
-		for (int i = 0; i < particleCount; i++)
+		if (currentState == state.IDLE)
 		{
-			pheroArr[i] = PheroStruct.FromModel(pheromones[i]);
+			//jobHandle.Complete();
+			particleCount = Mathf.Min(pheromones.Count, MAX_PARTICLE_COUNT);
+			for (int i = 0; i < particleCount; i++)
+			{
+				pheroArr[i] = PheroStruct.FromModel(pheromones[i]);
+			}
+			NativeArray<PheroStruct>.Copy(pheroArr, 0, NativePheromones, 0, particleCount);
+			MyJob job = new MyJob
+			{
+				input = NativePheromones,
+				result = JobResult,
+			};
+			jobHandle = job.Schedule();
+			currentState = state.RENDERING;
 		}
-		NativeArray<PheroStruct>.Copy(pheroArr, 0, NativePheromones, 0, particleCount);
-		MyJob job = new MyJob
-		{
-			input = NativePheromones,
-			result = JobResult,
-		};
-		jobHandle = job.Schedule();
-		pheroParticleSystem.SetParticles(particles, particleCount);
 	}
 	public void RenderPheromones()
 	{
-		jobHandle.Complete();
-		JobResult.CopyTo(jobResultOutput);
-		pheroParticleSystem.SetParticles(jobResultOutput, particleCount);
+		//if (jobHandle.IsCompleted){
+		if (currentState == state.RENDERING && jobHandle.IsCompleted)
+		{
+			jobHandle.Complete();
+			incompleteFrame = false;
+			JobResult.CopyTo(jobResultOutput);
+			pheroParticleSystem.SetParticles(jobResultOutput, particleCount);
+			currentState = state.IDLE;
+		}
+		else
+		{
+			//render previous?		
+		}
 	}
 
 	private void OnDestroy()
 	{
+		jobHandle.Complete();
 		if (nativePheromones.IsCreated)
 		{
 			nativePheromones.Dispose();

@@ -120,6 +120,7 @@ public class AntModel : EntityModel
 		float distance = closest == null ? float.MaxValue : (closest.Position - Position).magnitude;
 		if (closest != null && IsInside(closest))
 		{
+			closest.SetFullStrength();
 			if (closest.HomeDistance < homeDistanceMemory)
 			{
 				homeDistanceMemory = closest.HomeDistance;
