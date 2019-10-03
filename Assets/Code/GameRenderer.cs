@@ -89,6 +89,7 @@ public class GameRenderer : MonoBehaviour
     }
     void updateVisuals()
     {
+		pheromoneRenderer.PrepareUpdate(gameState.Pheromones.AsList());
 		foreach (KeyValuePair<EntityModel, VisualStatus> kvPair in modelMap){
 			kvPair.Value.removed = true;
 		}
@@ -150,8 +151,7 @@ public class GameRenderer : MonoBehaviour
                 newPhero.updatePositionBasic(pheroModel);
                 newPhero.setRepellant(pheroModel.IsRepellant);
             }
-        }*/
-		pheromoneRenderer.RenderPheromones(gameState.Pheromones.AsList());
+        }*/		
 
 		//TODO remove garbagecollected render&phero;
 		foreach (KeyValuePair<EntityModel, VisualStatus> entry in modelMap)
@@ -162,6 +162,7 @@ public class GameRenderer : MonoBehaviour
 			}
 		}
 		modelMap = modelMap.Where(x => x.Value.removed == false).ToDictionary(x => x.Key, x => x.Value);
+		pheromoneRenderer.RenderPheromones();
 
 
 	}
