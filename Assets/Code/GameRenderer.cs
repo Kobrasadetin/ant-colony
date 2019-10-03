@@ -14,6 +14,7 @@ public class GameRenderer : MonoBehaviour
 	private Anthill playerAnthill;
 	private List<RenderObject> renderObjects;
 	private List<Pheromone> pheromoneObjects;
+	private PheroParticleRender pheromoneRenderer;
 	private int clickDuration = 0;
 	AudioSource musicPlayer;
 	AudioSource sprayPlayer;
@@ -31,6 +32,7 @@ public class GameRenderer : MonoBehaviour
 	// Start is called before the first frame update
 	void Start()
 	{
+		pheromoneRenderer = gameObject.GetComponent<PheroParticleRender>();
 		musicPlayer = gameObject.AddComponent<AudioSource>();
 		sprayPlayer = gameObject.AddComponent<AudioSource>();
 		musicPlayer.clip = Resources.Load("sound/music") as AudioClip;
@@ -131,8 +133,8 @@ public class GameRenderer : MonoBehaviour
             }
         }
 
-        //draw phero
-        foreach (PheromoneModel pheroModel in gameState.Pheromones)
+		//draw phero
+		/*foreach (PheromoneModel pheroModel in gameState.Pheromones)
         {
 			VisualStatus outPhero;
             if (pheroMap.TryGetValue(pheroModel, out outPhero))
@@ -148,7 +150,8 @@ public class GameRenderer : MonoBehaviour
                 newPhero.updatePositionBasic(pheroModel);
                 newPhero.setRepellant(pheroModel.IsRepellant);
             }
-        }
+        }*/
+		pheromoneRenderer.RenderPheromones(gameState.Pheromones.AsList());
 
 		//TODO remove garbagecollected render&phero;
 		foreach (KeyValuePair<EntityModel, VisualStatus> entry in modelMap)

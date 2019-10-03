@@ -119,7 +119,6 @@ namespace Tests
 				foreach(PheromoneModel model in inRange){
 					Assert.That(result.Contains(model));
 				}
-				Debug.Log(result.Count);
 			}
 		}
 

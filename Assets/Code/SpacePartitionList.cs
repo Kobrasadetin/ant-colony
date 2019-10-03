@@ -20,9 +20,11 @@ public class SpacePartitionList<T> : IEnumerable where T : IObjectModel
 	private readonly List<T>[] buckets;
 	private List<T> outOfBounds = new List<T>();
 	private readonly List<T>[][] grid_buckets;
+	private readonly List<T>[][] grid_bucketsL;
 	private List<T> globalList = new List<T>();
 
-	private HashSet<List<T>> searchBuckets = new HashSet<List<T>>();
+	private List<T>[] searchBuckets = new List<T>[8];
+	private int searchBucketsIndex;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private uint find(float pos, float rangeStart, float stepReciproc, out bool outOfBound)
@@ -85,6 +87,10 @@ public class SpacePartitionList<T> : IEnumerable where T : IObjectModel
 		}
 	}
 
+	public List<T> AsList(){
+		return globalList;
+	}
+
 	public void Add(T model)
 	{
 		Vector2 pos = model.Position;
@@ -120,7 +126,7 @@ public class SpacePartitionList<T> : IEnumerable where T : IObjectModel
 
 	public List<T> FindInRange(Vector2 position, float range)
 	{
-		searchBuckets.Clear();
+		searchBucketsIndex = 0;
 		List<T> result = new List<T>();
 		//TODO implement large ranges
 		if (range > Mathf.Min(BUCKET_SIZE_X, BUCKET_SIZE_Y))
@@ -132,18 +138,24 @@ public class SpacePartitionList<T> : IEnumerable where T : IObjectModel
 
 		if (outOfBoundsX || outOfBoundsY)
 		{
-			searchBuckets.Add(outOfBounds);
+			searchBuckets[0]=outOfBounds;
+			searchBucketsIndex = 1;
 		}
 		else
 		{
 			foreach (List<T> l in grid_buckets[yGrid * (X_BUCKETS + 1) + xGrid])
 			{
-				searchBuckets.Add(l);
+				if (l.Count > 0)
+				{
+					searchBuckets[searchBucketsIndex] = l;
+					searchBucketsIndex++;
+				}
 			}
 		}
 		float treshold = range * range;
-		foreach (List<T> l in searchBuckets)
+		for(int ind = 0; ind < searchBucketsIndex; ind++)
 		{
+			List<T> l = searchBuckets[ind];
 			foreach (T model in l)
 			{
 				Vector2 modelPosition = model.Position;
