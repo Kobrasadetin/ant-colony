@@ -26,6 +26,7 @@ public class AntModel : EntityModel
 	private bool foodDisappointment = false;
 	private bool homeDisappointment = false;
 	private bool shouldSlowDown = false;
+	private float missionProgress = float.MaxValue;
 
 	public float HomeDistanceMemory { get => homeDistanceMemory; set => homeDistanceMemory = value; }
 	public BasicModel WalkingTarget { get => walkingTarget; set => walkingTarget = value; }
@@ -91,24 +92,76 @@ public class AntModel : EntityModel
 	public enum MissionType
 	{
 		GO_HOME,
-		FIND_FOOD
+		FORAGE,
+		FOOD_OR_HOME,
 	}
-	private struct Mission
+	public class Mission
 	{
+		public delegate float EvaluatePhero(PheromoneModel model);
+		public EvaluatePhero evaluatePhero;
 		public MissionType type;
-		public float LastProgress;
+		public bool SearchFood;
+		public bool GoHome;
+		internal static float HomeDistance(PheromoneModel model)
+		{
+			return -model.HomeDistance;
+		}
+		internal static float FoodDistance(PheromoneModel model)
+		{
+			return -model.FoodDistance;
+		}
+		internal static float HomeOrFood(PheromoneModel model)
+		{
+			return Mathf.Max(HomeDistance(model), FoodDistance(model));
+		}
 	}
 
-	private void StartMission(MissionType type)
+	private static readonly Mission ToGoHome = new Mission
 	{
-		mission.type = type;
-		if (type == MissionType.GO_HOME)
+		evaluatePhero = Mission.HomeDistance,
+		type = MissionType.GO_HOME,
+		SearchFood = false,
+		GoHome = true,
+	};
+	private static Mission ToForage = new Mission
+	{
+		evaluatePhero = Mission.FoodDistance,
+		type = MissionType.FORAGE,
+		SearchFood = true,
+		GoHome = false,
+	};
+
+	private static readonly Mission ToStopStarving = new Mission
+	{
+		evaluatePhero = Mission.HomeOrFood,
+		type = MissionType.FOOD_OR_HOME,
+		SearchFood = true,
+		GoHome = true,
+	};
+
+	private static Mission MissionGoHome()
+	{
+		return new Mission
 		{
-			mission.LastProgress = homeDistanceMemory;
+			evaluatePhero = Mission.HomeDistance,
+			type = MissionType.GO_HOME,
+			SearchFood = false,
+			GoHome = true,
+		};
+	}
+
+	public void UpdateMission(Mission mission)
+	{
+		this.mission = mission;
+		float lastProgress = float.MaxValue;
+		if (mission.GoHome)
+		{
+			lastProgress = Mathf.Min(homeDistanceMemory, lastProgress);
 		}
-		if (type == MissionType.FIND_FOOD)
+
+		if (mission.SearchFood)
 		{
-			mission.LastProgress = foodDistanceMemory;
+			lastProgress = Mathf.Min(foodDistanceMemory, lastProgress);
 		}
 	}
 	private void EvaluateMissionProgress()
@@ -116,30 +169,44 @@ public class AntModel : EntityModel
 		if (mission.type == MissionType.GO_HOME)
 		{
 			//we get confused if home seems further away
-			float newConfusion = Mathf.Max(homeDistanceMemory - mission.LastProgress + 0.06f, -0.05f);
+			float newConfusion = Mathf.Max(homeDistanceMemory - missionProgress + 0.06f, -0.05f);
 			if (newConfusion > 0f)
 			{
 				homeDisappointment = true;
 			}
-			mission.LastProgress = homeDistanceMemory;
+			missionProgress = homeDistanceMemory;
 			Confusion += newConfusion;
 		}
-		if (mission.type == MissionType.FIND_FOOD)
+		if (mission.type == MissionType.FOOD_OR_HOME)
 		{
 			if (knownNearestFood == null && Carrying == null)
 			{
-				float deltaConfusion = Mathf.Clamp(foodDistanceMemory - mission.LastProgress + 0.05f, -0.05f, 0.5f);
+				float deltaConfusion = Mathf.Clamp(Mathf.Min(foodDistanceMemory, homeDistanceMemory) - missionProgress + 0.05f, -0.05f, 0.5f);
 				if (deltaConfusion > 0f)
 				{
 					foodDisappointment = true;
 				}
-				mission.LastProgress = foodDistanceMemory;
+				missionProgress = Mathf.Min(foodDistanceMemory, homeDistanceMemory);
+				Confusion += deltaConfusion;
+			}
+		}
+		if (mission.type == MissionType.FORAGE)
+		{
+			if (knownNearestFood == null && Carrying == null)
+			{
+				float deltaConfusion = Mathf.Clamp(foodDistanceMemory - missionProgress + 0.05f, -0.05f, 0.5f);
+				if (deltaConfusion > 0f)
+				{
+					foodDisappointment = true;
+				}
+				missionProgress = foodDistanceMemory;
 				Confusion += deltaConfusion;
 			}
 		}
 	}
 
-	public bool SlowMove(){
+	public bool SlowMove()
+	{
 		return shouldSlowDown;
 	}
 
@@ -151,7 +218,7 @@ public class AntModel : EntityModel
 	public AntModel(Vector2 position) : base(ANT_RADIUS)
 	{
 		Position = position;
-		StartMission(MissionType.FIND_FOOD);
+		UpdateMission(ToForage);
 	}
 
 	public void Rotate(float amount)
@@ -203,7 +270,7 @@ public class AntModel : EntityModel
 	{
 		Confusion -= 0.005f;
 		IncrementMemory(ANT_SPEED);
-		MoveForward(shouldSlowDown ? ANT_SPEED*0.5f : ANT_SPEED);
+		MoveForward(shouldSlowDown ? ANT_SPEED * 0.5f : ANT_SPEED);
 		if (Carrying != null)
 		{
 			Carrying.Position = Position + ForwardVector(Radius + Carrying.Radius);
@@ -218,7 +285,7 @@ public class AntModel : EntityModel
 
 	public void DecideRotation()
 	{
-		if (Confusion < ANT_CONFUSED_TRESHOLD && knownNearestFood != null && mission.type == MissionType.FIND_FOOD)
+		if (knownNearestFood != null && knownNearestFood.CarriedBy == null && mission.SearchFood)
 		{
 			walkingTarget = knownNearestFood;
 		}
@@ -263,20 +330,34 @@ public class AntModel : EntityModel
 		Rotation = Random.Range(-Mathf.PI, Mathf.PI);
 	}
 
+	public void DecideMission()
+	{
+		if (Carrying != null && Carrying.IsFood())
+		{
+			UpdateMission(ToGoHome);
+		}
+		else
+		{
+			UpdateMission(ToForage);
+		}
+		if (IsHungry())
+		{
+			UpdateMission(ToStopStarving);
+		}
+	}
+
 	public void PickUp(EntityModel entity)
 	{
 		if (entity.IsFood() && entity.CarriedBy == null)
 		{
 			RemoveConfusion();
 			foodDistanceMemory = 0.0f;
-			StartMission(MissionType.GO_HOME);
 			entity.CarriedBy = this;
 			Carrying = entity;
 		}
 	}
 	public void Drop()
 	{
-		StartMission(MissionType.FIND_FOOD);
 		Carrying.CarriedBy = null;
 		Carrying = null;
 	}
@@ -292,7 +373,9 @@ public class AntModel : EntityModel
 			if (Confusion < 0.1f)
 			{
 				closest.Confusion = 0f;
-			} else {
+			}
+			else
+			{
 				//Debug.Log("confusion!");
 			}
 			closest.Confusion = (9 * closest.Confusion + Confusion) * (1 / 10f);
@@ -340,16 +423,16 @@ public class AntModel : EntityModel
 		}
 		if (closest != null)
 		{
-			if (Carrying != null && Carrying.IsFood())
+			float bestTargetScore = float.MinValue;
+
+			foreach (PheromoneModel phero in closebyPheromones)
 			{
-				walkingTarget = AvoidConfusing(homeDirection);
-				StartMission(MissionType.GO_HOME);
-			}
-			if (Carrying == null)
-			{
-				//if (foodDirection != null && foodDirection.FoodDistance < 2f)
-				walkingTarget = AvoidConfusing(foodDirection);
-				StartMission(MissionType.FIND_FOOD);
+				float targetScore = mission.evaluatePhero(phero);
+				if (targetScore > bestTargetScore)
+				{
+					bestTargetScore = targetScore;
+					walkingTarget = phero;
+				}
 			}
 		}
 

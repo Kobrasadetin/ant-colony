@@ -86,6 +86,7 @@ public class GameState
             } else {
 				pickUpFoods(ant);
 			}
+			ant.DecideMission();
             ant.DecideRotation();
             ant.WalkForward();
             ant.PheromoneActions(this);
@@ -195,7 +196,11 @@ public class GameState
 			}
             //TODO deal with dropped food
         }
-    }
+		//eat
+		float antHunger = ant.Hunger;
+		ant.DecreaseHunger(playerAnthill.DecreaseFood(antHunger));
+
+	}
 
     private void pickUpFoods(AntModel ant)
     {
