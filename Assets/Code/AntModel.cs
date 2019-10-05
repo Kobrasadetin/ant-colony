@@ -9,9 +9,10 @@ public class AntModel : EntityModel
 	public const float JAW_RADIUS = 0.01f;
 	public const float NEW_PHEROMONE_TRESHOLD = 0.15f;
 	public const float SNIFFING_RANGE = 0.3f;
+	public const float SLOWDOWN_TRESHOLD = 0.15f;
 	public const float FOOD_SPREAD_MULTIPLIER = 1.5f;
 	public const float ANT_CONFUSED_TRESHOLD = 0.7f;
-	public const float PHERO_CONFUSE_TRSHLD = 0.7f;
+	public const float PHERO_CONFUSE_TRSHLD = 0.3f;
 
 	private float foodDistanceMemory = float.MaxValue;
 	private float homeDistanceMemory = 0.0f;
@@ -24,6 +25,7 @@ public class AntModel : EntityModel
 	private float health = 1f;
 	private bool foodDisappointment = false;
 	private bool homeDisappointment = false;
+	private bool shouldSlowDown = false;
 
 	public float HomeDistanceMemory { get => homeDistanceMemory; set => homeDistanceMemory = value; }
 	public BasicModel WalkingTarget { get => walkingTarget; set => walkingTarget = value; }
@@ -137,6 +139,10 @@ public class AntModel : EntityModel
 		}
 	}
 
+	public bool SlowMove(){
+		return shouldSlowDown;
+	}
+
 	public void RemoveConfusion()
 	{
 		confusion = 0f;
@@ -197,7 +203,7 @@ public class AntModel : EntityModel
 	{
 		Confusion -= 0.005f;
 		IncrementMemory(ANT_SPEED);
-		MoveForward(ANT_SPEED);
+		MoveForward(shouldSlowDown ? ANT_SPEED*0.5f : ANT_SPEED);
 		if (Carrying != null)
 		{
 			Carrying.Position = Position + ForwardVector(Radius + Carrying.Radius);
@@ -234,9 +240,12 @@ public class AntModel : EntityModel
 		}
 		else
 		{
-			Vector2 target = Util.rotateVector(WalkingTarget.Position - Position, Mathf.PI / 2);
+			Vector2 toTarget = WalkingTarget.Position - Position;
+			Vector2 perpendicular = Util.rotateVector(toTarget.normalized, Mathf.PI / 2);
 			Vector2 heading = ForwardVector(1f);
-			float dot = Vector2.Dot(target, heading);
+			float dot = Vector2.Dot(perpendicular, heading);
+
+			shouldSlowDown = toTarget.magnitude < SLOWDOWN_TRESHOLD && Mathf.Abs(dot) > 0.6;
 
 			float dir = TURNING_SPEED;
 

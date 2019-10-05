@@ -10,6 +10,10 @@ public class Ant : RenderObject
 	public Sprite confusion;
 	public Sprite starving;
 	public void updateAntFeelings(AntModel model){
+		mainGraphics.transform.localScale = Vector3.one;
+		if (model.SlowMove()) {
+			mainGraphics.transform.localScale = Vector3.one * 1.5f;
+		}
 		feelingsRenderer.enabled = false;
 		if (model.IsConfused())
 		{
