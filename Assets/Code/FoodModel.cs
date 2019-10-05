@@ -15,7 +15,19 @@ public class FoodModel : EntityModel
 		this.Position = new Vector2(position.x, position.y);
     }
 
-    public override bool IsFood()
+	public float DecreaseNutrition(float amount){
+		float oldNutrition = nutritionValue;
+		nutritionValue = Mathf.Max(nutritionValue - amount, 0f);
+		return oldNutrition - nutritionValue;
+	}
+	public float DecreasePoison(float amount)
+	{
+		float oldPoison = poisonValue;
+		poisonValue = Mathf.Max(poisonValue - amount, 0f);
+		return oldPoison - poisonValue;
+	}
+
+	public override bool IsFood()
     {
         return true;
     }

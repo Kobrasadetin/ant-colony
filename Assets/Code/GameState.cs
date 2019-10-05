@@ -88,6 +88,7 @@ public class GameState
             ant.DecideRotation();
             ant.WalkForward();
             ant.PheromoneActions(this);
+			ant.AdvanceTime();
         }
 		foreach (PheromoneModel phero in pheromones)
 		{

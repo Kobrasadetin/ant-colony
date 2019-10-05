@@ -124,8 +124,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: db64ed8c05ffb5047932c02052d462fb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  confusion: {fileID: 6221551215679921884}
+  feelingsRenderer: {fileID: 6221551215679921884}
   mainGraphics: {fileID: 395943919132216254}
+  hunger: {fileID: 21300000, guid: fc10c82eab2f87740924379b4bcdcd4c, type: 3}
+  confusion: {fileID: 21300000, guid: 0c854645e7327f445815c3c8feeceba3, type: 3}
+  starving: {fileID: 21300000, guid: 78b8bb47902535f48a241a344c6509c6, type: 3}
 --- !u!1 &4399628535509075052
 GameObject:
   m_ObjectHideFlags: 0
@@ -137,7 +140,7 @@ GameObject:
   - component: {fileID: 2969804035557080787}
   - component: {fileID: 6221551215679921884}
   m_Layer: 0
-  m_Name: confusion
+  m_Name: feelings
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -194,7 +197,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 417ccece7655ff141b5debacf31fee67, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 0c854645e7327f445815c3c8feeceba3, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0

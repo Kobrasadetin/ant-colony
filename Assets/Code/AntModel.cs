@@ -19,12 +19,50 @@ public class AntModel : EntityModel
 	private float confusion = 0.0f;
 	private Mission mission;
 	private FoodModel knownNearestFood;
+	private float hunger = 0f;
+	private float poison = 0f;
+	private float health = 1f;
 
 	public float HomeDistanceMemory { get => homeDistanceMemory; set => homeDistanceMemory = value; }
 	public BasicModel WalkingTarget { get => walkingTarget; set => walkingTarget = value; }
 	public float FoodDistanceMemory { get => foodDistanceMemory; set => foodDistanceMemory = value; }
 	public float Confusion { get => confusion; set => confusion = Mathf.Clamp(value, 0, 1); }
 	public FoodModel KnownNearestFood { get => knownNearestFood; set => knownNearestFood = value; }
+	public float Hunger { get => hunger; }
+
+	public void IncreaseHunger(float amount){
+		hunger = Mathf.Min(hunger + amount, 1f);
+	}
+	public void IncreasePoison(float amount)
+	{
+		poison += amount;
+	}
+	public void DecreasePoison(float amount)
+	{
+		poison = Mathf.Max(poison - amount, 0f);
+	}
+	public float DecreaseHunger(float amount)
+	{
+		float oldHunger = hunger;
+		hunger = Mathf.Max(hunger - amount, 0f);
+		return oldHunger - hunger;
+	}
+	public float DecreaseHealth(float amount)
+	{
+		float oldHealth = health;
+		health = Mathf.Max(health - amount, 0f);
+		return oldHealth - health;
+	}
+	public bool IsHungry(){
+		return hunger > 0.7f;
+	}
+	public bool IsStarving()
+	{
+		return hunger > 0.99f;
+	}
+	public bool IsConfused(){
+		return Confusion > ANT_CONFUSED_TRESHOLD;
+	}
 
 	public enum MissionType
 	{
@@ -34,7 +72,6 @@ public class AntModel : EntityModel
 	private struct Mission
 	{
 		public MissionType type;
-		public PheromoneModel missionTarget;
 		public float LastProgress;
 	}
 
@@ -105,11 +142,27 @@ public class AntModel : EntityModel
 	{
 		HomeDistanceMemory += amount;
 		FoodDistanceMemory += amount;
-		Confusion -= 0.0005f;
+	}
+
+	public void AdvanceTime()
+	{
+		IncreaseHunger(0.0003f);
+		if (Carrying != null && Carrying.IsFood() && hunger > 0.1f)
+		{
+			FoodModel food = (FoodModel)Carrying;
+			DecreaseHunger(food.DecreaseNutrition(0.05f));
+			IncreasePoison(food.DecreasePoison(0.05f));
+		}
+		if (IsStarving()){
+			DecreaseHealth(0.05f);
+		}
+		DecreaseHealth(poison*0.1f);
+		DecreasePoison(0.01f);
 	}
 
 	public void WalkForward()
 	{
+		Confusion -= 0.0005f;
 		IncrementMemory(ANT_SPEED);
 		MoveForward(ANT_SPEED);
 		if (Carrying != null)
