@@ -30,7 +30,7 @@ public class PheromoneModel : BasicModel
 	public void update()
 	{
 		strength *= 0.999f;
-		confusion *= 0.99f;
+		Confusion *= 0.99f;
 	}
 
     public float HomeDistance { get => homeDistance; set => homeDistance = value; }

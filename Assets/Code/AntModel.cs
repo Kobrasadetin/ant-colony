@@ -11,7 +11,7 @@ public class AntModel : EntityModel
 	public const float SNIFFING_RANGE = 0.3f;
 	public const float FOOD_SPREAD_MULTIPLIER = 1.5f;
 	public const float ANT_CONFUSED_TRESHOLD = 0.7f;
-	public const float PHERO_CONFUSE_TRSHLD= 0.7f;
+	public const float PHERO_CONFUSE_TRSHLD = 0.7f;
 
 	private float foodDistanceMemory = float.MaxValue;
 	private float homeDistanceMemory = 0.0f;
@@ -22,16 +22,23 @@ public class AntModel : EntityModel
 	private float hunger = .4f;
 	private float poison = 0f;
 	private float health = 1f;
+	private bool foodDisappointment = false;
+	private bool homeDisappointment = false;
 
 	public float HomeDistanceMemory { get => homeDistanceMemory; set => homeDistanceMemory = value; }
 	public BasicModel WalkingTarget { get => walkingTarget; set => walkingTarget = value; }
 	public float FoodDistanceMemory { get => foodDistanceMemory; set => foodDistanceMemory = value; }
-	public float Confusion { get => confusion; set => confusion = Mathf.Clamp(value, 0, 1); }
+	public float Confusion
+	{
+		get => confusion;
+		set => confusion = Mathf.Clamp(value, 0, 1);
+	}
 	public FoodModel KnownNearestFood { get => knownNearestFood; set => knownNearestFood = value; }
-	public float Hunger { get => hunger; }
+	public float Hunger => hunger;
 	public float Health { get => health; set => health = value; }
 
-	public void IncreaseHunger(float amount){
+	public void IncreaseHunger(float amount)
+	{
 		hunger = Mathf.Min(hunger + amount, 1f);
 	}
 	public void IncreasePoison(float amount)
@@ -54,7 +61,8 @@ public class AntModel : EntityModel
 		health = Mathf.Max(health - amount, 0f);
 		return oldHealth - health;
 	}
-	public bool IsHungry(){
+	public bool IsHungry()
+	{
 		return hunger > 0.7f;
 	}
 	public bool IsStarving()
@@ -67,12 +75,14 @@ public class AntModel : EntityModel
 	}
 	public void Die()
 	{
-		if (Carrying != null){
+		if (Carrying != null)
+		{
 			Carrying.CarriedBy = null;
 			Carrying = null;
 		}
 	}
-	public bool IsConfused(){
+	public bool IsConfused()
+	{
 		return Confusion > ANT_CONFUSED_TRESHOLD;
 	}
 
@@ -105,14 +115,25 @@ public class AntModel : EntityModel
 		{
 			//we get confused if home seems further away
 			float newConfusion = Mathf.Max(homeDistanceMemory - mission.LastProgress + 0.06f, -0.05f);
+			if (newConfusion > 0f)
+			{
+				homeDisappointment = true;
+			}
 			mission.LastProgress = homeDistanceMemory;
 			Confusion += newConfusion;
 		}
 		if (mission.type == MissionType.FIND_FOOD)
 		{
-			float newConfusion = Mathf.Max(foodDistanceMemory - mission.LastProgress + 0.06f, -0.05f);
-			mission.LastProgress = foodDistanceMemory;
-			Confusion += newConfusion;
+			if (knownNearestFood == null && Carrying == null)
+			{
+				float deltaConfusion = Mathf.Clamp(foodDistanceMemory - mission.LastProgress + 0.05f, -0.05f, 0.5f);
+				if (deltaConfusion > 0f)
+				{
+					foodDisappointment = true;
+				}
+				mission.LastProgress = foodDistanceMemory;
+				Confusion += deltaConfusion;
+			}
 		}
 	}
 
@@ -164,16 +185,17 @@ public class AntModel : EntityModel
 			DecreaseHunger(food.DecreaseNutrition(0.05f));
 			IncreasePoison(food.DecreasePoison(0.05f));
 		}
-		if (IsStarving()){
+		if (IsStarving())
+		{
 			DecreaseHealth(0.001f);
 		}
-		DecreaseHealth(poison*0.001f);
+		DecreaseHealth(poison * 0.001f);
 		DecreasePoison(0.001f);
 	}
 
 	public void WalkForward()
 	{
-		Confusion -= 0.0005f;
+		Confusion -= 0.005f;
 		IncrementMemory(ANT_SPEED);
 		MoveForward(ANT_SPEED);
 		if (Carrying != null)
@@ -261,8 +283,10 @@ public class AntModel : EntityModel
 			if (Confusion < 0.1f)
 			{
 				closest.Confusion = 0f;
+			} else {
+				//Debug.Log("confusion!");
 			}
-			closest.Confusion = (19 * closest.Confusion + Confusion) * (1/20f);
+			closest.Confusion = (9 * closest.Confusion + Confusion) * (1 / 10f);
 			Confusion = Mathf.Max(closest.Confusion, Confusion);
 
 			if (closest.Confusion < PHERO_CONFUSE_TRSHLD)
@@ -277,16 +301,22 @@ public class AntModel : EntityModel
 				}
 				if (closest.FoodDistance < foodDistanceMemory)
 				{
-					foodDistanceMemory = closest.FoodDistance;
+					//foodDistanceMemory = closest.FoodDistance;
 				}
 				else
 				{
 					closest.FoodDistance = Mathf.Min(foodDistanceMemory, closest.FoodDistance);
 				}
 			}
-			if (IsConfused() && closest.FoodDistance < foodDistanceMemory)
+			if (homeDisappointment)
 			{
-				closest.FoodDistance = foodDistanceMemory;
+				closest.HomeDistance = homeDistanceMemory;
+				foodDisappointment = false;
+			}
+			if (foodDisappointment)
+			{
+				closest.FoodDistance = float.MaxValue;
+				foodDisappointment = false;
 			}
 		}
 		if (distance > NEW_PHEROMONE_TRESHOLD)
@@ -315,10 +345,14 @@ public class AntModel : EntityModel
 		}
 
 	}
-	private PheromoneModel AvoidConfusing(PheromoneModel phero){
-		if (phero == null || phero.Confusion > PHERO_CONFUSE_TRSHLD) {
+	private PheromoneModel AvoidConfusing(PheromoneModel phero)
+	{
+		if (phero == null || phero.Confusion > PHERO_CONFUSE_TRSHLD)
+		{
 			return null;
-		} else {
+		}
+		else
+		{
 			return phero;
 		}
 	}

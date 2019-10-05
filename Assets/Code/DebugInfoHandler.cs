@@ -57,13 +57,22 @@ public class DebugInfoHandler
 
     public void writeDebugInfo(Text debugInfo, bool renderBlocked, GameState gameState)
 	{
+		Vector3 pz = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+		PheromoneModel near = GameState.Search<PheromoneModel>.Nearest(gameState.findPheromonesInRange(pz, 0.3f), pz);
+		string pheroInfo = near == null ? " -- " : "confusion " + near.Confusion.ToString("0.00") +
+			", homeDist " + Mathf.Min(near.HomeDistance, 99.99f).ToString("00.00") +
+			", foodDist " + Mathf.Min(near.FoodDistance, 99.99f).ToString("00.00") +
+			"\n";
 		frameTimeBuffer[frameTimeIndex] = calculateFrameInfo(renderBlocked);
 		frameTimeIndex = (frameTimeIndex + 1) % BUFFER_FRAMES;
 		BufferInfo info = CalculateBufferStats();
 		debugInfo.text = "FPS avr " + info.AverageFramerate.ToString("00.00") +
 			", min " + info.LowestFramerate.ToString("00.00") +
 			"	thread finished "+ (info.RenderIdleTime*100).ToString("00.") + "%\n"+
-			"Pheromones:"+ gameState.Pheromones.AsList().Count;
+			"Pheromones:"+ gameState.Pheromones.AsList().Count+"\n"+
+			"@"+pz.x.ToString("00.0") + ","+pz.y.ToString("00.0") +
+			": "+ pheroInfo +
+			"\n";
 
 	}
 }

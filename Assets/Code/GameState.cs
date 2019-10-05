@@ -110,7 +110,7 @@ public class GameState
 		return Search<FoodModel>.Nearest(Foods, position);
 	}
 
-	private class Search<T> where T : IObjectModel
+	public class Search<T> where T : IObjectModel
 	{
 		public static List<T> ObjectsInRange(List<T> fromList, Vector2 position, float range)
 		{

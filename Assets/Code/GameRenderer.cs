@@ -109,7 +109,7 @@ public class GameRenderer : MonoBehaviour
 		}
 		if (Input.GetKeyDown("3"))
 		{
-			simulationMultiplier = 3;
+			simulationMultiplier = 4;
 		}
 		if (Input.GetMouseButton(0))
 		{
