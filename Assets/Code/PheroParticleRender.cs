@@ -1,41 +1,47 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
 
-public class PheroParticleRender : MonoBehaviour
+public class PheroParticleRender : MonoBehaviour, System.IDisposable
 {
-	public const int MAX_PARTICLE_COUNT = 4096;
+	public const int MAX_PARTICLE_COUNT = 16384;
+	public const int MIN_FRAME_PARTICLES = 512;
+	public const int MAX_FRAME_PARTICLES = 16384;
 	public const bool COLORS = true;
-	private ParticleSystem.Particle[] particles;
-	private readonly PheroStruct[] pheroArr = new PheroStruct[MAX_PARTICLE_COUNT];
-	private int particleCount;
+
+	public int ParticlesThisFrame = 16384;
+	private readonly int frameParticeCount;
 	private ParticleSystem pheroParticleSystem;
 	private JobHandle jobHandle;
-	private NativeArray<PheroStruct> nativePheromones;
+	private readonly PheroStruct[] pheroInputBuffer = new PheroStruct[MAX_PARTICLE_COUNT];
+	private NativeArray<PheroStruct> nativeInputBuffer;
 	private NativeArray<ParticleSystem.Particle> jobResult;
 	private readonly ParticleSystem.Particle[] jobResultOutput = new ParticleSystem.Particle[MAX_PARTICLE_COUNT];
-	private bool incompleteFrame = false;
+	public volatile RenderState CurrentState = RenderState.IDLE;
+	private int pheroCount = 0;
+	public bool Blocked = false;
+	private readonly int startingIndex = 0;
 
-	private enum state
+	public enum RenderState
 	{
 		IDLE,
 		QUEUED,
 		RENDERING,
 	}
-	private state currentState = state.IDLE;
 
-	private NativeArray<PheroStruct> NativePheromones
+	private NativeArray<PheroStruct> PheromoneInputBuffer
 	{
 		get
 		{
-			if (!nativePheromones.IsCreated)
+			if (!nativeInputBuffer.IsCreated)
 			{
-				nativePheromones = new NativeArray<PheroStruct>(MAX_PARTICLE_COUNT, Allocator.Persistent);
+				nativeInputBuffer = new NativeArray<PheroStruct>(MAX_PARTICLE_COUNT, Allocator.Persistent);
 			}
 
-			return nativePheromones;
+			return nativeInputBuffer;
 		}
 	}
 	public NativeArray<ParticleSystem.Particle> JobResult
@@ -51,24 +57,6 @@ public class PheroParticleRender : MonoBehaviour
 		}
 	}
 
-	private static void UpdateParticles(PheromoneModel[] pheromones, ParticleSystem.Particle[] target)
-	{
-		int count = pheromones.Length;
-		for (int i = 0; i < count; i++)
-		{
-			PheromoneModel p = pheromones[i];
-			target[i].position = p.Position;
-			if (COLORS)
-			{
-				target[i].startColor = new Color(
-					(p.FoodDistance + p.HomeDistance) * .5f,
-					p.FoodDistance * 0.1f,
-					p.HomeDistance * 0.1f,
-					p.Strength * 0.5f);
-			}
-		}
-	}
-
 	private static void UpdateParticles(NativeArray<PheroStruct> pheromones, NativeArray<ParticleSystem.Particle> target)
 	{
 
@@ -81,10 +69,10 @@ public class PheroParticleRender : MonoBehaviour
 				position = p.position,
 				startColor = new Color
 				{
-					r = (p.FoodDistance + p.HomeDistance) * .5f,
+					r = (p.FoodDistance + p.HomeDistance) * .5f + p.Confusion,
 					g = p.FoodDistance * 0.1f,
-					b = p.HomeDistance * 0.1f,
-					a = p.Strength * 0.5f
+					b = (p.HomeDistance * 0.1f) + p.Confusion,
+					a = p.Strength * 0.5f,
 				},
 				startSize = 0.3f,
 				remainingLifetime = 5,
@@ -109,49 +97,33 @@ public class PheroParticleRender : MonoBehaviour
 	private void Start()
 	{
 		pheroParticleSystem = GetComponentInChildren<ParticleSystem>();
-		particles = new ParticleSystem.Particle[MAX_PARTICLE_COUNT];
-		for (int i = 0; i < MAX_PARTICLE_COUNT; i++)
-		{
-			ParticleSystem.Particle p = new ParticleSystem.Particle
-			{
-				startSize = 0.3f,
-				remainingLifetime = 5,
-				position = Vector3.zero,
-				startColor = new Color(1f, 1f, 1f, 0.5f)
-			};
-			particles[i] = p;
-		}
-
 	}
 
-	private struct MyJob : IJob
+	private struct ParallelUpdate : IJobParallelFor
 	{
 		[ReadOnly]
 		public NativeArray<PheroStruct> input;
 		[WriteOnly]
 		public NativeArray<ParticleSystem.Particle> result;
-		void IJob.Execute()
+		void IJobParallelFor.Execute(int i)
 		{
-			int count = input.Length;
-			for (int i = 0; i < count; i++)
+			PheroStruct p = input[i];
+			result[i] = new ParticleSystem.Particle
 			{
-				PheroStruct p = input[i];
-				result[i] = new ParticleSystem.Particle
+				position = p.position,
+				startColor = new Color
 				{
-					position = p.position,
-					startColor = new Color
-					{
-						r = (p.FoodDistance + p.HomeDistance) * .5f,
-						g = p.FoodDistance * 0.1f,
-						b = p.HomeDistance * 0.1f,
-						a = p.Strength * 0.5f
-					},
-					startSize = 0.3f,
-					remainingLifetime = 5,
-				};
-			}
+					r = (p.FoodDistance + p.HomeDistance) * .5f + p.Confusion,
+					g = p.FoodDistance * 0.1f,
+					b = (p.HomeDistance * 0.1f) + p.Confusion,
+					a = p.Strength * 0.5f,
+				},
+				startSize = 0.3f,
+				remainingLifetime = 5,
+			};
 		}
 	}
+
 
 	private struct PheroStruct
 	{
@@ -159,6 +131,7 @@ public class PheroParticleRender : MonoBehaviour
 		public float HomeDistance;
 		public float FoodDistance;
 		public float Strength;
+		public float Confusion;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static PheroStruct FromModel(PheromoneModel model)
 		{
@@ -167,59 +140,59 @@ public class PheroParticleRender : MonoBehaviour
 				HomeDistance = model.HomeDistance,
 				FoodDistance = model.FoodDistance,
 				position = model.Position,
-				Strength = model.Strength
+				Strength = model.Strength,
+				Confusion = model.Confusion,
 			};
 		}
 	}
 
-	public void PrepareUpdate(List<PheromoneModel> pheromones)
+	public void RenderThreaded(List<PheromoneModel> pheromones)
 	{
-		if (currentState == state.IDLE)
+		if (CurrentState == RenderState.IDLE)
 		{
-			//jobHandle.Complete();
-			particleCount = Mathf.Min(pheromones.Count, MAX_PARTICLE_COUNT);
-			for (int i = 0; i < particleCount; i++)
+			pheroCount = pheromones.Count;
+			for (int i = 0; i < pheroCount; i++)
 			{
-				pheroArr[i] = PheroStruct.FromModel(pheromones[i]);
+				pheroInputBuffer[i] = PheroStruct.FromModel(pheromones[i]);
 			}
-			NativeArray<PheroStruct>.Copy(pheroArr, 0, NativePheromones, 0, particleCount);
-			MyJob job = new MyJob
+			NativeArray<PheroStruct>.Copy(pheroInputBuffer, 0, PheromoneInputBuffer, 0, pheroCount);
+			ParallelUpdate job = new ParallelUpdate
 			{
-				input = NativePheromones,
+				input = PheromoneInputBuffer,
 				result = JobResult,
 			};
-			jobHandle = job.Schedule();
-			currentState = state.RENDERING;
+			jobHandle = job.Schedule(pheroCount, 1024); //maybe smaller batch size for mobile??
+			CurrentState = RenderState.RENDERING;
 		}
 	}
 	public void RenderPheromones()
 	{
-		//if (jobHandle.IsCompleted){
-		if (currentState == state.RENDERING && jobHandle.IsCompleted)
+		Blocked = false;
+		if (CurrentState == RenderState.RENDERING && jobHandle.IsCompleted)
 		{
 			jobHandle.Complete();
-			incompleteFrame = false;
-			JobResult.CopyTo(jobResultOutput);
-			pheroParticleSystem.SetParticles(jobResultOutput, particleCount);
-			currentState = state.IDLE;
+			NativeArray<ParticleSystem.Particle>.Copy(jobResult, 0, jobResultOutput, 0, pheroCount);
+			pheroParticleSystem.SetParticles(jobResultOutput, pheroCount);
+			CurrentState = RenderState.IDLE;
+			//startingIndex += PARTICLES_PER_FRAME;
 		}
 		else
 		{
-			//render previous?		
+			if (!jobHandle.IsCompleted)
+			Blocked = true;
 		}
 	}
 
 	private void OnDestroy()
 	{
 		jobHandle.Complete();
-		if (nativePheromones.IsCreated)
-		{
-			nativePheromones.Dispose();
-		}
+		Dispose();
+	}
 
-		if (jobResult.IsCreated)
-		{
-			jobResult.Dispose();
-		}
+	public void Dispose()
+	{
+		jobHandle.Complete();
+		((IDisposable)jobResult).Dispose();
+		((IDisposable)nativeInputBuffer).Dispose();
 	}
 }

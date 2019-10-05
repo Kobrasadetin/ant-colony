@@ -18,6 +18,8 @@ public class GameRenderer : MonoBehaviour
 	private int clickDuration = 0;
 	AudioSource musicPlayer;
 	AudioSource sprayPlayer;
+	public UnityEngine.UI.Text debugInfo;
+	private DebugInfoHandler debugInfoHandeler = new DebugInfoHandler();
 
 	private void gameStateInitializer(GameState gameState)
 	{
@@ -61,9 +63,18 @@ public class GameRenderer : MonoBehaviour
 		}
 	}
 
+	private void WriteDebugInfo(bool renderBlocked)
+	{
+		if (debugInfo != null)
+		{
+			debugInfoHandeler.writeDebugInfo(debugInfo, renderBlocked, gameState);
+		}
+	}
+
     // Update is called once per frame
     void Update()
-    {	
+    {
+		pheromoneRenderer.RenderThreaded(gameState.Pheromones.AsList());
 		if (!musicPlayer.isPlaying)
         {
             musicPlayer.Play();
@@ -87,9 +98,12 @@ public class GameRenderer : MonoBehaviour
         updateVisuals();
 
     }
-    void updateVisuals()
-    {
-		pheromoneRenderer.PrepareUpdate(gameState.Pheromones.AsList());
+	private void LateUpdate()
+	{
+		pheromoneRenderer.RenderPheromones();
+	}
+	void updateVisuals()
+    {		
 		foreach (KeyValuePair<EntityModel, VisualStatus> kvPair in modelMap){
 			kvPair.Value.removed = true;
 		}
@@ -102,7 +116,10 @@ public class GameRenderer : MonoBehaviour
             VisualStatus outAnt;
             if (modelMap.TryGetValue(antModel, out outAnt))
             {
-                outAnt.renderObject.updatePosition(antModel);
+				Ant ant = (Ant)outAnt.renderObject;
+
+				ant.updateAntPosition(antModel);
+				ant.updateAntFeelings(antModel);
 				outAnt.removed = false;
             }
             else
@@ -111,7 +128,7 @@ public class GameRenderer : MonoBehaviour
                 Ant newAnt = Instantiate(antPrefab, this.transform).GetComponent<Ant>();
                 renderObjects.Add(newAnt);
                 modelMap.Add(antModel, new VisualStatus(false, newAnt));
-                newAnt.updatePosition(antModel);
+                newAnt.updateAntPosition(antModel);
             }
         }
 
@@ -162,10 +179,8 @@ public class GameRenderer : MonoBehaviour
 			}
 		}
 		modelMap = modelMap.Where(x => x.Value.removed == false).ToDictionary(x => x.Key, x => x.Value);
-		pheromoneRenderer.RenderPheromones();
 
-
+		WriteDebugInfo(pheromoneRenderer.Blocked);
 	}
-
 
 }

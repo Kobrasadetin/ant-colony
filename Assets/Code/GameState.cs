@@ -168,6 +168,7 @@ public class GameState
     {
         ant.HomeDistanceMemory = 0f;
 		ant.FoodDistanceMemory = float.MaxValue;
+		ant.RemoveConfusion();
         if (ant.Carrying != null)
         {
 			EntityModel dropped = ant.Carrying;
@@ -193,9 +194,16 @@ public class GameState
     {
         if (ant.Carrying == null)
         {
+			FoodModel nearestFood = null;
+			float foodDistance = float.MaxValue;
             foreach (FoodModel food in foods)
             {
-                float dist = Vector2.Distance(ant.Position, food.Position) - ant.Radius - food.Radius;
+                float dist = Vector2.Distance(ant.JawPosition(), food.Position) - food.Radius - AntModel.JAW_RADIUS;
+				if (dist < foodDistance && dist < AntModel.SNIFFING_RANGE && food.CarriedBy == null)
+				{
+					foodDistance = dist;
+					nearestFood = food;
+				}
                 if (dist < 0)
                 {
 					ant.PickUp(food);
@@ -203,7 +211,9 @@ public class GameState
                 }
 
             }
-        }
+			ant.KnownNearestFood = nearestFood;
+
+		}
     }
 
     public int AntCount()
