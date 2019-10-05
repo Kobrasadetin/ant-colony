@@ -9800,7 +9800,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1634210143
 RectTransform:
   m_ObjectHideFlags: 0
@@ -9992,6 +9992,7 @@ MonoBehaviour:
   pheromonePrefab: {fileID: 865933043316373304, guid: cc994dbb406d99048b2f09206c609764,
     type: 3}
   debugInfo: {fileID: 1130324384}
+  simulationMultiplier: 1
 --- !u!4 &1677429021
 Transform:
   m_ObjectHideFlags: 0
