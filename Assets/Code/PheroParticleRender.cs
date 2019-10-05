@@ -15,8 +15,10 @@ public class PheroParticleRender : MonoBehaviour, System.IDisposable
 	public int ParticlesThisFrame = 16384;
 	private readonly int frameParticeCount;
 	private ParticleSystem pheroParticleSystem;
+	private ParticleSystemRenderer renderer;
 	private JobHandle jobHandle;
 	private readonly PheroStruct[] pheroInputBuffer = new PheroStruct[MAX_PARTICLE_COUNT];
+	private NativeArray<Settings> settingsNativeArray;
 	private NativeArray<PheroStruct> nativeInputBuffer;
 	private NativeArray<ParticleSystem.Particle> jobResult;
 	private readonly ParticleSystem.Particle[] jobResultOutput = new ParticleSystem.Particle[MAX_PARTICLE_COUNT];
@@ -24,6 +26,13 @@ public class PheroParticleRender : MonoBehaviour, System.IDisposable
 	private int pheroCount = 0;
 	public bool Blocked = false;
 	private readonly int startingIndex = 0;
+	public Material blurryMaterial;
+	public Material solidMaterial;
+	private Settings currentSettings = new Settings
+	{ particleSize = 0.3f
+	};
+
+	//private ParticleSyste
 
 	public enum RenderState
 	{
@@ -40,7 +49,6 @@ public class PheroParticleRender : MonoBehaviour, System.IDisposable
 			{
 				nativeInputBuffer = new NativeArray<PheroStruct>(MAX_PARTICLE_COUNT, Allocator.Persistent);
 			}
-
 			return nativeInputBuffer;
 		}
 	}
@@ -54,6 +62,17 @@ public class PheroParticleRender : MonoBehaviour, System.IDisposable
 			}
 
 			return jobResult;
+		}
+	}
+
+	private NativeArray<Settings> SettingsNativeArray { get
+		{
+			if (!settingsNativeArray.IsCreated)
+			{
+				settingsNativeArray = new NativeArray<Settings>(1, Allocator.Persistent);
+			}
+
+			return settingsNativeArray;
 		}
 	}
 
@@ -97,10 +116,18 @@ public class PheroParticleRender : MonoBehaviour, System.IDisposable
 	private void Start()
 	{
 		pheroParticleSystem = GetComponentInChildren<ParticleSystem>();
+		renderer = pheroParticleSystem.GetComponent<ParticleSystemRenderer>();
+		Debug.Log(renderer);
+	}
+
+	private struct Settings{
+		public float particleSize;
 	}
 
 	private struct ParallelUpdate : IJobParallelFor
 	{
+		[ReadOnly]
+		public NativeArray<Settings> settings;
 		[ReadOnly]
 		public NativeArray<PheroStruct> input;
 		[WriteOnly]
@@ -118,7 +145,7 @@ public class PheroParticleRender : MonoBehaviour, System.IDisposable
 					b = (p.HomeDistance * 0.1f) + p.Confusion,
 					a = p.Strength * 0.5f,
 				},
-				startSize = 0.3f,
+				startSize = settings[0].particleSize,
 				remainingLifetime = 5,
 			};
 		}
@@ -151,25 +178,30 @@ public class PheroParticleRender : MonoBehaviour, System.IDisposable
 		if (CurrentState == RenderState.IDLE)
 		{
 			pheroCount = pheromones.Count;
+			NativeArray<PheroStruct> input = PheromoneInputBuffer;
+			NativeArray<Settings> settings = SettingsNativeArray;
+			settings[0] = currentSettings;
 			for (int i = 0; i < pheroCount; i++)
 			{
-				pheroInputBuffer[i] = PheroStruct.FromModel(pheromones[i]);
+				input[i] = PheroStruct.FromModel(pheromones[i]);
 			}
-			NativeArray<PheroStruct>.Copy(pheroInputBuffer, 0, PheromoneInputBuffer, 0, pheroCount);
 			ParallelUpdate job = new ParallelUpdate
 			{
-				input = PheromoneInputBuffer,
+				settings = SettingsNativeArray,
+				input = input,
 				result = JobResult,
 			};
 			jobHandle = job.Schedule(pheroCount, 1024); //maybe smaller batch size for mobile??
 			CurrentState = RenderState.RENDERING;
 		}
 	}
-	public void RenderPheromones()
+	public void RenderPheromones(GameOptions options)
 	{
 		Blocked = false;
+		currentSettings.particleSize = options.blurryPheromones ? 0.25f : 0.05f;
 		if (CurrentState == RenderState.RENDERING && jobHandle.IsCompleted)
 		{
+			renderer.material = options.blurryPheromones ? blurryMaterial : solidMaterial;
 			jobHandle.Complete();
 			NativeArray<ParticleSystem.Particle>.Copy(jobResult, 0, jobResultOutput, 0, pheroCount);
 			pheroParticleSystem.SetParticles(jobResultOutput, pheroCount);
@@ -192,7 +224,17 @@ public class PheroParticleRender : MonoBehaviour, System.IDisposable
 	public void Dispose()
 	{
 		jobHandle.Complete();
-		((IDisposable)jobResult).Dispose();
-		((IDisposable)nativeInputBuffer).Dispose();
+		if (jobResult.IsCreated)
+		{
+			((IDisposable)jobResult).Dispose();
+		}
+		if (nativeInputBuffer.IsCreated)
+		{
+			((IDisposable)nativeInputBuffer).Dispose();
+		}
+		if (settingsNativeArray.IsCreated)
+		{
+			((IDisposable)settingsNativeArray).Dispose();
+		}
 	}
 }

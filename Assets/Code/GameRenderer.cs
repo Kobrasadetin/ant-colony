@@ -9,6 +9,7 @@ public class GameRenderer : MonoBehaviour
 	private Dictionary<PheromoneModel, VisualStatus> pheroMap;
 	public GameObject playerAnthillPrefab;
 	public GameObject antPrefab;
+
 	public GameObject[] foodObjects;
 	public GameObject pheromonePrefab;
 	private Anthill playerAnthill;
@@ -16,15 +17,21 @@ public class GameRenderer : MonoBehaviour
 	private List<Pheromone> pheromoneObjects;
 	private PheroParticleRender pheromoneRenderer;
 	private int clickDuration = 0;
-	AudioSource musicPlayer;
-	AudioSource sprayPlayer;
+	private AudioSource musicPlayer;
+	private AudioSource sprayPlayer;
 	public UnityEngine.UI.Text debugInfo;
 	private DebugInfoHandler debugInfoHandeler = new DebugInfoHandler();
+	private bool paused = false;
+	private GameOptions options = new GameOptions();
+	public int simulationMultiplier = 1;
+
+	public GameOptions Options { get => options; set => options = value; }
 
 	private void gameStateInitializer(GameState gameState)
 	{
 		FoodGenerator[] foodGenerators = GetComponentsInChildren<FoodGenerator>();
-		foreach (FoodGenerator generator in foodGenerators) {
+		foreach (FoodGenerator generator in foodGenerators)
+		{
 			Vector2 pos = new Vector2(generator.transform.position.x, generator.transform.position.y);
 			gameState.AddFoodSource(pos + new Vector2(0.15f, 0.0f), 1.0f, generator.poisonValue);
 			gameState.AddFoodSource(pos - new Vector2(0.15f, 0.0f), 1.0f, generator.poisonValue);
@@ -32,7 +39,7 @@ public class GameRenderer : MonoBehaviour
 	}
 
 	// Start is called before the first frame update
-	void Start()
+	private void Start()
 	{
 		pheromoneRenderer = gameObject.GetComponent<PheroParticleRender>();
 		musicPlayer = gameObject.AddComponent<AudioSource>();
@@ -46,12 +53,21 @@ public class GameRenderer : MonoBehaviour
 		pheromoneObjects = new List<Pheromone>();
 		gameState = new GameState();
 		gameStateInitializer(gameState);
-		playerAnthill = Instantiate(playerAnthillPrefab, this.transform).GetComponent<Anthill>();
-		Debug.Log(playerAnthill);
+		playerAnthill = Instantiate(playerAnthillPrefab, transform).GetComponent<Anthill>();
 		playerAnthill.transform.position = gameState.PlayerAnthill.Position;
 	}
 
-	class VisualStatus
+	internal void Pause()
+	{
+		Debug.Log("paused");
+		paused = true;
+	}
+	internal void Resume()
+	{
+		paused = false;
+	}
+
+	private class VisualStatus
 	{
 		public bool removed = false;
 		public RenderObject renderObject;
@@ -71,40 +87,61 @@ public class GameRenderer : MonoBehaviour
 		}
 	}
 
-    // Update is called once per frame
-    void Update()
-    {
+	// Update is called once per frame
+	private void Update()
+	{
+		if (paused)
+		{
+			return;
+		}
 		pheromoneRenderer.RenderThreaded(gameState.Pheromones.AsList());
 		if (!musicPlayer.isPlaying)
-        {
-            musicPlayer.Play();
-        }
-        if (Input.GetMouseButton(0))
-        {
-            clickDuration += 1;
-        }
-        if (Input.GetMouseButtonUp(0))
-        {
-            if (clickDuration < 8)
-            {
-                Vector3 pz = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-                gameState.AddRepellantPheromone(pz);
-                sprayPlayer.Play();
-            }
-            clickDuration = 0;
-        }
-        if (gameState == null) { Start(); };
-        gameState.update();
-        updateVisuals();
+		{
+			musicPlayer.Play();
+		}
+		if (Input.GetKeyDown("1"))
+		{
+			simulationMultiplier = 1;
+		}
+		if (Input.GetKeyDown("2"))
+		{
+			simulationMultiplier = 2;
+		}
+		if (Input.GetKeyDown("3"))
+		{
+			simulationMultiplier = 3;
+		}
+		if (Input.GetMouseButton(0))
+		{
+			clickDuration += 1;
+		}
+		if (Input.GetMouseButtonUp(0))
+		{
+			if (clickDuration < 8)
+			{
+				Vector3 pz = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+				gameState.AddRepellantPheromone(pz);
+				sprayPlayer.Play();
+			}
+			clickDuration = 0;
+		}
+		if (gameState == null) { Start(); };
+		for (int i = 0; i < simulationMultiplier; i++)
+		{
+			gameState.update();
+		}
+		updateVisuals();
 
-    }
+	}
 	private void LateUpdate()
 	{
-		pheromoneRenderer.RenderPheromones();
+		pheromoneRenderer.RenderPheromones(options);
 	}
-	void updateVisuals()
-    {		
-		foreach (KeyValuePair<EntityModel, VisualStatus> kvPair in modelMap){
+
+	private void updateVisuals()
+	{
+		foreach (KeyValuePair<EntityModel, VisualStatus> kvPair in modelMap)
+		{
 			kvPair.Value.removed = true;
 		}
 
@@ -112,68 +149,48 @@ public class GameRenderer : MonoBehaviour
 		playerAnthill.updateVisual(gameState.PlayerAnthill);
 
 		//draw ants
-		foreach (AntModel antModel in gameState.Ants) {
-            VisualStatus outAnt;
-            if (modelMap.TryGetValue(antModel, out outAnt))
-            {
+		foreach (AntModel antModel in gameState.Ants)
+		{
+			if (modelMap.TryGetValue(antModel, out VisualStatus outAnt))
+			{
 				Ant ant = (Ant)outAnt.renderObject;
 
 				ant.updateAntPosition(antModel);
 				ant.updateAntFeelings(antModel);
 				outAnt.removed = false;
-            }
-            else
-            {
-                // Found a new ant!
-                Ant newAnt = Instantiate(antPrefab, this.transform).GetComponent<Ant>();
-                renderObjects.Add(newAnt);
-                modelMap.Add(antModel, new VisualStatus(false, newAnt));
-                newAnt.updateAntPosition(antModel);
-            }
-        }
+			}
+			else
+			{
+				// Found a new ant!
+				Ant newAnt = Instantiate(antPrefab, transform).GetComponent<Ant>();
+				renderObjects.Add(newAnt);
+				modelMap.Add(antModel, new VisualStatus(false, newAnt));
+				newAnt.updateAntPosition(antModel);
+			}
+		}
 
-        //draw food
-        foreach (FoodModel foodModel in gameState.Foods)
-        {
-			VisualStatus outFood;
-            if (modelMap.TryGetValue(foodModel, out outFood))
-            {
-                outFood.renderObject.updatePosition(foodModel);
+		//draw food
+		foreach (FoodModel foodModel in gameState.Foods)
+		{
+			if (modelMap.TryGetValue(foodModel, out VisualStatus outFood))
+			{
+				outFood.renderObject.updatePosition(foodModel);
 				outFood.removed = false;
-            }
-            else
-            {
-                // Found a new ant!
-                Food newFood = Instantiate(foodObjects[0], this.transform).GetComponent<Food>();
-                renderObjects.Add(newFood);
-                modelMap.Add(foodModel, new VisualStatus(false, newFood));
-                newFood.updatePosition(foodModel);
-            }
-        }
+			}
+			else
+			{
+				// Found a new ant!
+				Food newFood = Instantiate(foodObjects[0], transform).GetComponent<Food>();
+				renderObjects.Add(newFood);
+				modelMap.Add(foodModel, new VisualStatus(false, newFood));
+				newFood.updatePosition(foodModel);
+			}
+		}
 
-		//draw phero
-		/*foreach (PheromoneModel pheroModel in gameState.Pheromones)
-        {
-			VisualStatus outPhero;
-            if (pheroMap.TryGetValue(pheroModel, out outPhero))
-            {
-                
-            }
-            else
-            {
-                // Found a new phero!
-                Pheromone newPhero = Instantiate(pheromonePrefab, this.transform).GetComponent<Pheromone>();
-                pheromoneObjects.Add(newPhero);
-                pheroMap.Add(pheroModel, new VisualStatus(false, newPhero));
-                newPhero.updatePositionBasic(pheroModel);
-                newPhero.setRepellant(pheroModel.IsRepellant);
-            }
-        }*/		
-
-		//TODO remove garbagecollected render&phero;
 		foreach (KeyValuePair<EntityModel, VisualStatus> entry in modelMap)
 		{
-			if (entry.Value.removed == true){
+			if (entry.Value.removed == true)
+			{
 				renderObjects.Remove(entry.Value.renderObject);
 				entry.Value.renderObject.remove();
 			}

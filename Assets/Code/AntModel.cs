@@ -114,7 +114,6 @@ public class AntModel : EntityModel
 			mission.LastProgress = foodDistanceMemory;
 			Confusion += newConfusion;
 		}
-		Debug.Log("evaluated to " + Confusion);
 	}
 
 	public void RemoveConfusion()
@@ -284,6 +283,10 @@ public class AntModel : EntityModel
 				{
 					closest.FoodDistance = Mathf.Min(foodDistanceMemory, closest.FoodDistance);
 				}
+			}
+			if (IsConfused() && closest.FoodDistance < foodDistanceMemory)
+			{
+				closest.FoodDistance = foodDistanceMemory;
 			}
 		}
 		if (distance > NEW_PHEROMONE_TRESHOLD)
