@@ -19,7 +19,7 @@ public class AntModel : EntityModel
 	private float confusion = 0.0f;
 	private Mission mission;
 	private FoodModel knownNearestFood;
-	private float hunger = 0f;
+	private float hunger = .4f;
 	private float poison = 0f;
 	private float health = 1f;
 
@@ -29,6 +29,7 @@ public class AntModel : EntityModel
 	public float Confusion { get => confusion; set => confusion = Mathf.Clamp(value, 0, 1); }
 	public FoodModel KnownNearestFood { get => knownNearestFood; set => knownNearestFood = value; }
 	public float Hunger { get => hunger; }
+	public float Health { get => health; set => health = value; }
 
 	public void IncreaseHunger(float amount){
 		hunger = Mathf.Min(hunger + amount, 1f);
@@ -59,6 +60,17 @@ public class AntModel : EntityModel
 	public bool IsStarving()
 	{
 		return hunger > 0.99f;
+	}
+	public bool IsDead()
+	{
+		return health <= 0f;
+	}
+	public void Die()
+	{
+		if (Carrying != null){
+			Carrying.CarriedBy = null;
+			Carrying = null;
+		}
 	}
 	public bool IsConfused(){
 		return Confusion > ANT_CONFUSED_TRESHOLD;
@@ -154,10 +166,10 @@ public class AntModel : EntityModel
 			IncreasePoison(food.DecreasePoison(0.05f));
 		}
 		if (IsStarving()){
-			DecreaseHealth(0.05f);
+			DecreaseHealth(0.001f);
 		}
-		DecreaseHealth(poison*0.1f);
-		DecreasePoison(0.01f);
+		DecreaseHealth(poison*0.001f);
+		DecreasePoison(0.001f);
 	}
 
 	public void WalkForward()
@@ -251,7 +263,7 @@ public class AntModel : EntityModel
 			{
 				closest.Confusion = 0f;
 			}
-			closest.Confusion = (9 * closest.Confusion + Confusion) * (0.1f);
+			closest.Confusion = (19 * closest.Confusion + Confusion) * (1/20f);
 			Confusion = Mathf.Max(closest.Confusion, Confusion);
 
 			if (closest.Confusion < PHERO_CONFUSE_TRSHLD)

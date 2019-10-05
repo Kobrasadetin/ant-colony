@@ -77,6 +77,7 @@ public class GameState
 		foreach (SourceModel source in sources){
 			source.update(this);
 		}
+		List<AntModel> deadAnts = new List<AntModel>();
         foreach (AntModel ant in ants)
         {      
             if (ant.IsInside(playerAnthill))
@@ -89,7 +90,12 @@ public class GameState
             ant.WalkForward();
             ant.PheromoneActions(this);
 			ant.AdvanceTime();
+			if (ant.IsDead()){
+				deadAnts.Add(ant);
+				ant.Die();
+			}
         }
+		ants.RemoveAll(ant => deadAnts.Contains(ant));
 		foreach (PheromoneModel phero in pheromones)
 		{
 			phero.update();
