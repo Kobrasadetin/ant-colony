@@ -15,6 +15,9 @@ public class GameRenderer : MonoBehaviour
 
 	public GameObject[] foodObjects;
 	public GameObject pheromonePrefab;
+	public AudioClip hatchingSound;
+	public AudioClip spraySound;
+
 	private Anthill playerAnthill;
 	private List<RenderObject> renderObjects;
 	private List<Pheromone> pheromoneObjects;
@@ -29,6 +32,7 @@ public class GameRenderer : MonoBehaviour
 	public int simulationMultiplier = 1;
 	private PheromoneSprayControl pheromoneSprayControl;
 	private int SpraySoundDelay = 0;
+	private GameInfo gameInfo;
 
 	public GameOptions Options { get => options; set => options = value; }
 
@@ -46,12 +50,12 @@ public class GameRenderer : MonoBehaviour
 	// Start is called before the first frame update
 	private void Start()
 	{
+		gameInfo = gameObject.GetComponentInChildren<GameInfo>();
 		pheromoneSprayControl = gameObject.GetComponentInChildren<PheromoneSprayControl>();
 		pheromoneRenderer = gameObject.GetComponent<PheroParticleRender>();
 		musicPlayer = gameObject.AddComponent<AudioSource>();
 		sprayPlayer = gameObject.AddComponent<AudioSource>();
 		musicPlayer.clip = Resources.Load("sound/music") as AudioClip;
-		sprayPlayer.clip = Resources.Load("sound/spray1") as AudioClip;
 		musicPlayer.Play();
 		modelMap = new Dictionary<EntityModel, VisualStatus>();
 		pheroMap = new Dictionary<PheromoneModel, VisualStatus>();
@@ -124,6 +128,7 @@ public class GameRenderer : MonoBehaviour
 					if (SpraySoundDelay > PHERO_SPRAY_SOUND_DELAY_FRAMES)
 					{
 						SpraySoundDelay = 0;
+						sprayPlayer.clip = spraySound;
 						sprayPlayer.pitch = Random.Range(0.98f, 1.02f);
 						sprayPlayer.Play();
 					}
@@ -135,6 +140,7 @@ public class GameRenderer : MonoBehaviour
 					if (SpraySoundDelay > PHERO_SPRAY_SOUND_DELAY_FRAMES)
 					{
 						SpraySoundDelay = 0;
+						sprayPlayer.clip = spraySound;
 						sprayPlayer.pitch = Random.Range(0.98f, 1.02f);
 						sprayPlayer.Play();
 					}
@@ -175,8 +181,17 @@ public class GameRenderer : MonoBehaviour
 		pheromoneRenderer.RenderPheromones(options);
 	}
 
+	public void AddAnt(){
+		if (gameState.AddAnt())
+		{
+			sprayPlayer.clip = hatchingSound;
+			sprayPlayer.Play();
+		};
+	}
+
 	private void updateVisuals()
 	{
+		gameInfo.setGameInfo(gameState);
 		foreach (KeyValuePair<EntityModel, VisualStatus> kvPair in modelMap)
 		{
 			kvPair.Value.removed = true;

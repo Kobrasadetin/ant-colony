@@ -19,7 +19,7 @@ public partial class AntModel : EntityModel
 	private float confusion = 0.0f;
 	private Mission mission;
 	private FoodModel knownNearestFood;
-	private float hunger = .4f;
+	private float hunger = 0f;
 	private float poison = 0f;
 	private float health = 1f;
 	private bool foodDisappointment = false;
@@ -208,7 +208,7 @@ public partial class AntModel : EntityModel
 
 	public void AdvanceTime()
 	{
-		IncreaseHunger(0.0003f);
+		IncreaseHunger(0.0002f);
 		if (Carrying != null && Carrying.IsFood() && hunger > 0.1f)
 		{
 			FoodModel food = (FoodModel)Carrying;

@@ -9,6 +9,7 @@ public class GameState
 	public float INITIAL_REPELLANT_STRENGTH = 0.33f;
 	public float INITIAL_ATTRACT_STRENGTH = 0.25f;
 	public const int RANDOM_PHEROMONES = 10;
+
 	public const float REPELLANT_DIST = 0.1f;
 	public const float REPELLANT_REMOVE_DIST = 0.1f;
 	public const float ATTRACT_REMOVE_DIST = 0.1f;
@@ -35,11 +36,7 @@ public class GameState
 		Pheromones = new SpacePartitionList<PheromoneModel>();
         for (int i = 0; i < INITIAL_ANTS; i++)
         {
-            AntModel ant = new AntModel(PlayerAnthill.Position);
-            ant.RandomOrientation();
-
-            ant.MoveForward(Random.Range(0, Random.Range( 0f, playerAnthill.Radius)));
-            ants.Add(ant);
+			addAntToNest();
         }
 
         for (int i = 0; i < INITIAL_FOOD; i++)
@@ -109,6 +106,24 @@ public class GameState
 			pheromones.Add(newPhero);
 		}
 	}
+
+	private void addAntToNest(){
+		AntModel ant = new AntModel(PlayerAnthill.Position);
+		ant.RandomOrientation();
+
+		ant.MoveForward(Random.Range(0, Random.Range(0f, playerAnthill.Radius)));
+		ants.Add(ant);
+	}
+
+	public int GetAntCount(){
+		return Ants.Count;
+	}
+
+	internal float GetPlayerFood()
+	{
+		return playerAnthill.FoodStorage;
+	}
+
 
 	public void AddFoodSource(Vector2 position, float nutrition, float poison){
 		sources.Add(new SourceModel(position, nutrition, poison));
@@ -196,6 +211,15 @@ public class GameState
 
 	}
 
+	internal bool AddAnt()
+	{
+		if (playerAnthill.FoodStorage > 1f){
+			playerAnthill.DecreaseFood(1f);
+			addAntToNest();
+			return true;
+		}
+		return false;
+	}
 
 	public List<PheromoneModel> findPheromonesInRange(Vector2 position, float range)
     {		
@@ -225,6 +249,7 @@ public class GameState
 				if (food.NutritionValue > food.PoisonValue){
 					//good food
 					playerAnthill.Health += 1;
+					playerAnthill.IncreaseFood( food.NutritionValue );
 				}
 				if (food.NutritionValue < food.PoisonValue)
 				{
