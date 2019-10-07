@@ -8,6 +8,7 @@ public class GameState
     public const int INITIAL_FOOD = 0;
 	public float INITIAL_REPELLANT_STRENGTH = 0.33f;
 	public float INITIAL_ATTRACT_STRENGTH = 0.25f;
+	public float NEW_ATTRACT_STRENGTH_TRSHLD = 0.02f;
 	public const int RANDOM_PHEROMONES = 10;
 
 	public const float REPELLANT_DIST = 0.1f;
@@ -86,7 +87,7 @@ public class GameState
 		List<PheromoneModel> closeByPheromones = Pheromones.FindInRange(position, ATTRACT_REMOVE_DIST);
 		foreach (PheromoneModel pher in closeByPheromones)
 		{
-			if (pher.IsAttract)
+			if (pher.IsAttract && pher.Strength > INITIAL_ATTRACT_STRENGTH - NEW_ATTRACT_STRENGTH_TRSHLD)
 			{
 				closestAttract = Mathf.Min(Vector2.Distance(pher.Position, position), closestAttract);
 			}
