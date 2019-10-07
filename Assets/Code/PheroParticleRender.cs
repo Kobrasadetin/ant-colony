@@ -29,7 +29,9 @@ public class PheroParticleRender : MonoBehaviour, System.IDisposable
 	public Material blurryMaterial;
 	public Material solidMaterial;
 	private Settings currentSettings = new Settings
-	{ particleSize = 0.3f
+	{
+		particleSize = 0.3f,
+		time = 0f
 	};
 
 	//private ParticleSyste
@@ -65,7 +67,9 @@ public class PheroParticleRender : MonoBehaviour, System.IDisposable
 		}
 	}
 
-	private NativeArray<Settings> SettingsNativeArray { get
+	private NativeArray<Settings> SettingsNativeArray
+	{
+		get
 		{
 			if (!settingsNativeArray.IsCreated)
 			{
@@ -120,8 +124,10 @@ public class PheroParticleRender : MonoBehaviour, System.IDisposable
 		Debug.Log(renderer);
 	}
 
-	private struct Settings{
+	private struct Settings
+	{
 		public float particleSize;
+		public float time;
 	}
 
 	private struct ParallelUpdate : IJobParallelFor
@@ -135,22 +141,67 @@ public class PheroParticleRender : MonoBehaviour, System.IDisposable
 		void IJobParallelFor.Execute(int i)
 		{
 			PheroStruct p = input[i];
-			result[i] = new ParticleSystem.Particle
+			if (input[i].SpecialType == 1) //repel
 			{
-				position = p.position,
-				startColor = new Color
+				result[i] = new ParticleSystem.Particle
 				{
-					r = (p.FoodDistance + p.HomeDistance) * .5f + p.Confusion,
-					g = p.FoodDistance * 0.1f,
-					b = (p.HomeDistance * 0.1f) + p.Confusion,
-					a = p.Strength * 0.5f,
-				},
-				startSize = settings[0].particleSize,
-				remainingLifetime = 5,
-			};
+					position = p.position,
+					startColor = new Color //rgb(91%,34%,98%)
+					{
+						r = .91f,
+						g = .34f,
+						b = .98f,
+						a = p.Strength * 3f,
+					},
+					startSize = settings[0].particleSize * 2.2f,
+					remainingLifetime = 0,
+				};
+			}
+			else if (input[i].SpecialType == 2) //attract
+			{
+				float m = Mathf.Abs((settings[0].time + p.Strength*150f) % 1f - 0.5f)*.5f + 0.75f;
+				result[i] = new ParticleSystem.Particle
+				{
+					position = p.position,					
+					startColor = new Color //rgb(34%,98%,52%)
+					{
+						r = .34f * m,
+						g = .98f *m,
+						b = .52f *m,
+						a = p.Strength * 4f,
+					},
+					startSize = settings[0].particleSize * 1.4f,
+					remainingLifetime = 0,
+				};
+			} else
+			{
+				result[i] = new ParticleSystem.Particle
+				{
+					position = p.position,
+					startColor = new Color
+					{
+						r = (p.FoodDistance + p.HomeDistance) * .5f + p.Confusion,
+						g = p.FoodDistance * 0.1f,
+						b = (p.HomeDistance * 0.1f) + p.Confusion,
+						a = p.Strength * 0.6f,
+					},
+					startSize = settings[0].particleSize,
+					remainingLifetime = 0,
+				};
+			}
 		}
 	}
 
+	private static int AssignSpecial(PheromoneModel model){
+		if (model.IsAttract){
+			return 2;
+		}
+		if (model.IsRepellant)
+		{
+			return 1;
+		}
+		return 0;
+	}
 
 	private struct PheroStruct
 	{
@@ -159,6 +210,7 @@ public class PheroParticleRender : MonoBehaviour, System.IDisposable
 		public float FoodDistance;
 		public float Strength;
 		public float Confusion;
+		public int SpecialType;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static PheroStruct FromModel(PheromoneModel model)
 		{
@@ -169,12 +221,14 @@ public class PheroParticleRender : MonoBehaviour, System.IDisposable
 				position = model.Position,
 				Strength = model.Strength,
 				Confusion = model.Confusion,
+				SpecialType = AssignSpecial(model),
 			};
 		}
 	}
 
 	public void RenderThreaded(List<PheromoneModel> pheromones)
 	{
+		currentSettings.time = Time.time % 1f;
 		if (CurrentState == RenderState.IDLE)
 		{
 			pheroCount = pheromones.Count;
@@ -202,6 +256,13 @@ public class PheroParticleRender : MonoBehaviour, System.IDisposable
 		if (CurrentState == RenderState.RENDERING && jobHandle.IsCompleted)
 		{
 			renderer.material = options.blurryPheromones ? blurryMaterial : solidMaterial;
+			if (options.blurryPheromones){
+				var am = pheroParticleSystem.textureSheetAnimation;
+				am.enabled = false;
+			} else {
+				var am = pheroParticleSystem.textureSheetAnimation;
+				am.enabled = true;
+			}
 			jobHandle.Complete();
 			NativeArray<ParticleSystem.Particle>.Copy(jobResult, 0, jobResultOutput, 0, pheroCount);
 			pheroParticleSystem.SetParticles(jobResultOutput, pheroCount);
@@ -211,7 +272,9 @@ public class PheroParticleRender : MonoBehaviour, System.IDisposable
 		else
 		{
 			if (!jobHandle.IsCompleted)
-			Blocked = true;
+			{
+				Blocked = true;
+			}
 		}
 	}
 

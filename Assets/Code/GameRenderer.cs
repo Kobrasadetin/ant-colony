@@ -1,9 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class GameRenderer : MonoBehaviour
 {
+	public const int PHERO_SPRAY_SOUND_DELAY_FRAMES = 6;
+
 	public GameState gameState;
 	private Dictionary<EntityModel, VisualStatus> modelMap;
 	private Dictionary<PheromoneModel, VisualStatus> pheroMap;
@@ -24,6 +27,8 @@ public class GameRenderer : MonoBehaviour
 	private bool paused = false;
 	private GameOptions options = new GameOptions();
 	public int simulationMultiplier = 1;
+	private PheromoneSprayControl pheromoneSprayControl;
+	private int SpraySoundDelay = 0;
 
 	public GameOptions Options { get => options; set => options = value; }
 
@@ -41,6 +46,7 @@ public class GameRenderer : MonoBehaviour
 	// Start is called before the first frame update
 	private void Start()
 	{
+		pheromoneSprayControl = gameObject.GetComponentInChildren<PheromoneSprayControl>();
 		pheromoneRenderer = gameObject.GetComponent<PheroParticleRender>();
 		musicPlayer = gameObject.AddComponent<AudioSource>();
 		sprayPlayer = gameObject.AddComponent<AudioSource>();
@@ -90,6 +96,7 @@ public class GameRenderer : MonoBehaviour
 	// Update is called once per frame
 	private void Update()
 	{
+		SpraySoundDelay++;
 		if (paused)
 		{
 			return;
@@ -99,6 +106,56 @@ public class GameRenderer : MonoBehaviour
 		{
 			musicPlayer.Play();
 		}
+		DebugGameSpeedControls();
+		if (Input.GetMouseButton(0))
+		{
+			PointerEventData pointerEventData = new PointerEventData(EventSystem.current);
+			GameObject clicked = EventSystem.current.currentSelectedGameObject;
+			if (clicked != null && clicked.GetComponent<UIClickable>() != null)
+			{
+				//ui button click
+			}
+			else
+			{
+				if (pheromoneSprayControl.ActiveButton == PheromoneSprayControl.SprayButton.REPEL)
+				{
+					Vector3 pz = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+					gameState.AddRepellantPheromone(pz);
+					if (SpraySoundDelay > PHERO_SPRAY_SOUND_DELAY_FRAMES)
+					{
+						SpraySoundDelay = 0;
+						sprayPlayer.pitch = Random.Range(0.98f, 1.02f);
+						sprayPlayer.Play();
+					}
+				}
+				if (pheromoneSprayControl.ActiveButton == PheromoneSprayControl.SprayButton.ATTRACT)
+				{
+					Vector3 pz = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+					gameState.AddAttractPheromone(pz);
+					if (SpraySoundDelay > PHERO_SPRAY_SOUND_DELAY_FRAMES)
+					{
+						SpraySoundDelay = 0;
+						sprayPlayer.pitch = Random.Range(0.98f, 1.02f);
+						sprayPlayer.Play();
+					}
+				}
+			}
+		}
+		if (Input.GetMouseButtonUp(0))
+		{
+			clickDuration = 0;
+		}
+		if (gameState == null) { Start(); };
+		for (int i = 0; i < simulationMultiplier; i++)
+		{
+			gameState.update();
+		}
+		updateVisuals();
+
+	}
+
+	private void DebugGameSpeedControls()
+	{
 		if (Input.GetKeyDown("1"))
 		{
 			simulationMultiplier = 1;
@@ -111,28 +168,8 @@ public class GameRenderer : MonoBehaviour
 		{
 			simulationMultiplier = 4;
 		}
-		if (Input.GetMouseButton(0))
-		{
-			clickDuration += 1;
-		}
-		if (Input.GetMouseButtonUp(0))
-		{
-			if (clickDuration < 8)
-			{
-				Vector3 pz = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-				gameState.AddRepellantPheromone(pz);
-				sprayPlayer.Play();
-			}
-			clickDuration = 0;
-		}
-		if (gameState == null) { Start(); };
-		for (int i = 0; i < simulationMultiplier; i++)
-		{
-			gameState.update();
-		}
-		updateVisuals();
-
 	}
+
 	private void LateUpdate()
 	{
 		pheromoneRenderer.RenderPheromones(options);

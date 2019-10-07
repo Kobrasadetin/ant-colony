@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-public class AntModel : EntityModel
+public partial class AntModel : EntityModel
 {
 	public const float ANT_SPEED = 0.01f;
 	public const float TURNING_SPEED = 0.1f;
@@ -16,7 +16,6 @@ public class AntModel : EntityModel
 
 	private float foodDistanceMemory = float.MaxValue;
 	private float homeDistanceMemory = 0.0f;
-	private BasicModel walkingTarget = null;
 	private float confusion = 0.0f;
 	private Mission mission;
 	private FoodModel knownNearestFood;
@@ -27,9 +26,10 @@ public class AntModel : EntityModel
 	private bool homeDisappointment = false;
 	private bool shouldSlowDown = false;
 	private float missionProgress = float.MaxValue;
+	private BasicModel walkingTarget;
+	private BasicModel avoidTarget;
 
 	public float HomeDistanceMemory { get => homeDistanceMemory; set => homeDistanceMemory = value; }
-	public BasicModel WalkingTarget { get => walkingTarget; set => walkingTarget = value; }
 	public float FoodDistanceMemory { get => foodDistanceMemory; set => foodDistanceMemory = value; }
 	public float Confusion
 	{
@@ -95,73 +95,30 @@ public class AntModel : EntityModel
 		FORAGE,
 		FOOD_OR_HOME,
 	}
-	public class Mission
-	{
-		public delegate float EvaluatePhero(PheromoneModel model);
-		public EvaluatePhero evaluatePhero;
-		public MissionType type;
-		public bool SearchFood;
-		public bool GoHome;
-		internal static float HomeDistance(PheromoneModel model)
-		{
-			return -model.HomeDistance;
-		}
-		internal static float FoodDistance(PheromoneModel model)
-		{
-			return -model.FoodDistance;
-		}
-		internal static float HomeOrFood(PheromoneModel model)
-		{
-			return Mathf.Max(HomeDistance(model), FoodDistance(model));
-		}
-	}
 
-	private static readonly Mission ToGoHome = new Mission
-	{
-		evaluatePhero = Mission.HomeDistance,
-		type = MissionType.GO_HOME,
-		SearchFood = false,
-		GoHome = true,
-	};
-	private static Mission ToForage = new Mission
-	{
-		evaluatePhero = Mission.FoodDistance,
-		type = MissionType.FORAGE,
-		SearchFood = true,
-		GoHome = false,
-	};
-
-	private static readonly Mission ToStopStarving = new Mission
-	{
-		evaluatePhero = Mission.HomeOrFood,
-		type = MissionType.FOOD_OR_HOME,
-		SearchFood = true,
-		GoHome = true,
-	};
-
-	private static Mission MissionGoHome()
-	{
-		return new Mission
-		{
-			evaluatePhero = Mission.HomeDistance,
-			type = MissionType.GO_HOME,
-			SearchFood = false,
-			GoHome = true,
-		};
+	public void TickActions(GameState gameState) {
+		DecideMission();
+		PheromoneActions(gameState);
+		DecideRotation();
+		WalkForward();
+		AdvanceTime();
 	}
 
 	public void UpdateMission(Mission mission)
 	{
-		this.mission = mission;
-		float lastProgress = float.MaxValue;
-		if (mission.GoHome)
+		if (mission != this.mission)
 		{
-			lastProgress = Mathf.Min(homeDistanceMemory, lastProgress);
-		}
+			this.mission = mission;
+			float lastProgress = float.MaxValue;
+			if (mission.GoHome)
+			{
+				lastProgress = Mathf.Min(homeDistanceMemory, lastProgress);
+			}
 
-		if (mission.SearchFood)
-		{
-			lastProgress = Mathf.Min(foodDistanceMemory, lastProgress);
+			if (mission.SearchFood)
+			{
+				lastProgress = Mathf.Min(foodDistanceMemory, lastProgress);
+			}
 		}
 	}
 	private void EvaluateMissionProgress()
@@ -285,6 +242,22 @@ public class AntModel : EntityModel
 
 	public void DecideRotation()
 	{
+		if (avoidTarget!=null){
+			float dot = CalculateHeading(avoidTarget.Position);
+			float dir = TURNING_SPEED;
+			if (dot < 0.0f)
+			{
+				dir = -TURNING_SPEED;
+			}
+			Rotate(dir);
+			return;
+		}
+		if (Confusion > ANT_CONFUSED_TRESHOLD)
+		{
+			walkingTarget = null;
+			Rotate(RandomRotation());
+			return;
+		}
 		if (knownNearestFood != null && knownNearestFood.CarriedBy == null && mission.SearchFood)
 		{
 			walkingTarget = knownNearestFood;
@@ -301,18 +274,15 @@ public class AntModel : EntityModel
 			EvaluateMissionProgress();
 			walkingTarget = null;
 		}
-		if (WalkingTarget == null)
+		if (walkingTarget == null)
 		{
 			Rotate(RandomRotation());
 		}
 		else
 		{
-			Vector2 toTarget = WalkingTarget.Position - Position;
-			Vector2 perpendicular = Util.rotateVector(toTarget.normalized, Mathf.PI / 2);
-			Vector2 heading = ForwardVector(1f);
-			float dot = Vector2.Dot(perpendicular, heading);
+			float dot = CalculateHeading(walkingTarget.Position);
 
-			shouldSlowDown = toTarget.magnitude < SLOWDOWN_TRESHOLD && Mathf.Abs(dot) > 0.6;
+			//shouldSlowDown = toTarget.magnitude < SLOWDOWN_TRESHOLD && Mathf.Abs(dot) > 0.6;
 
 			float dir = TURNING_SPEED;
 
@@ -323,6 +293,15 @@ public class AntModel : EntityModel
 			}
 			Rotate(dir);
 		}
+	}
+
+	private float CalculateHeading(Vector2 target)
+	{
+		Vector2 toTarget = target - Position;
+		Vector2 perpendicular = Util.rotateVector(toTarget.normalized, Mathf.PI / 2);
+		Vector2 heading = ForwardVector(1f);
+		float dot = Vector2.Dot(perpendicular, heading);
+		return dot;
 	}
 
 	public void RandomOrientation()
@@ -364,12 +343,14 @@ public class AntModel : EntityModel
 
 	internal void PheromoneActions(GameState state)
 	{
+		walkingTarget = null;
 		List<PheromoneModel> closebyPheromones = state.findPheromonesInRange(Position, SNIFFING_RANGE);
-		FindInfoPheromone(closebyPheromones, out PheromoneModel closest, out PheromoneModel homeDirection, out PheromoneModel foodDirection);
-		float distance = closest == null ? float.MaxValue : (closest.Position - Position).magnitude;
-		if (closest != null && IsInside(closest))
+		PheromoneAreaInfo info = FindInfoPheromone(closebyPheromones);
+		float distance = info.closest == null ? float.MaxValue : (info.closest.Position - Position).magnitude;
+		var closest = info.closest;
+		if (closest != null && IsInside(closest) && !closest.IsRepellant)
 		{
-			closest.SetFullStrength();
+			closest.Strength = 1.0f;
 			if (Confusion < 0.1f)
 			{
 				closest.Confusion = 0f;
@@ -400,15 +381,24 @@ public class AntModel : EntityModel
 					closest.FoodDistance = Mathf.Min(foodDistanceMemory, closest.FoodDistance);
 				}
 			}
-			if (homeDisappointment)
+			if (closest.IsAttract)
 			{
-				closest.HomeDistance = homeDistanceMemory;
+				closest.IsAttract = false;
+				homeDisappointment = false;
 				foodDisappointment = false;
 			}
-			if (foodDisappointment)
+			else
 			{
-				closest.FoodDistance = float.MaxValue;
-				foodDisappointment = false;
+				if (homeDisappointment)
+				{
+					closest.HomeDistance = homeDistanceMemory;
+					homeDisappointment = false;
+				}
+				if (foodDisappointment)
+				{
+					closest.FoodDistance = float.MaxValue;
+					foodDisappointment = false;
+				}
 			}
 		}
 		if (distance > NEW_PHEROMONE_TRESHOLD)
@@ -423,15 +413,22 @@ public class AntModel : EntityModel
 		}
 		if (closest != null)
 		{
+			avoidTarget = info.repel;
 			float bestTargetScore = float.MinValue;
-
-			foreach (PheromoneModel phero in closebyPheromones)
+			if (info.attract != null)
 			{
-				float targetScore = mission.evaluatePhero(phero);
-				if (targetScore > bestTargetScore)
+				walkingTarget = info.attract;
+			}
+			else
+			{
+				foreach (PheromoneModel phero in closebyPheromones)
 				{
-					bestTargetScore = targetScore;
-					walkingTarget = phero;
+					float targetScore = mission.evaluatePhero(phero);
+					if (targetScore > bestTargetScore)
+					{
+						bestTargetScore = targetScore;
+						walkingTarget = phero;
+					}
 				}
 			}
 		}
@@ -449,14 +446,22 @@ public class AntModel : EntityModel
 		}
 	}
 
-	private void FindInfoPheromone(List<PheromoneModel> closebyPheromones, out PheromoneModel closest, out PheromoneModel home, out PheromoneModel food)
+	private struct PheromoneAreaInfo {	
+		public PheromoneModel closest;
+		public PheromoneModel home;
+		public PheromoneModel food;
+		public PheromoneModel repel;
+		public PheromoneModel attract;
+	}
+
+	private PheromoneAreaInfo FindInfoPheromone(List<PheromoneModel> closebyPheromones)
 	{
+		PheromoneAreaInfo info = new PheromoneAreaInfo();
+		float strongestAttract = float.MinValue;
+		float closestRepel = float.MaxValue;
 		float homeSmell = float.MaxValue;
 		float foodSmell = float.MaxValue;
 		float dist2 = float.MaxValue;
-		closest = null;
-		home = null;
-		food = null;
 		foreach (PheromoneModel phero in closebyPheromones)
 		{
 			Vector2 v = Position - phero.Position;
@@ -464,19 +469,30 @@ public class AntModel : EntityModel
 			if (d2 < dist2)
 			{
 				dist2 = d2;
-				closest = phero;
+				info.closest = phero;
 			}
 			if (phero.HomeDistance < homeSmell)
 			{
 				homeSmell = phero.HomeDistance;
-				home = phero;
+				info.home = phero;
 			}
 			if (phero.FoodDistance < foodSmell)
 			{
 				foodSmell = phero.FoodDistance;
-				food = phero;
+				info.food = phero;
+			}
+			if (phero.IsRepellant && d2 < closestRepel)
+			{
+				closestRepel = d2;
+				info.repel = phero;
+			}
+			if (phero.IsAttract && phero.Strength > strongestAttract)
+			{
+				strongestAttract = phero.Strength;
+				info.attract = phero;
 			}
 		}
+		return info;
 	}
 	private PheromoneModel FindNearestPheromone(List<PheromoneModel> closebyPheromones)
 	{

@@ -14,7 +14,7 @@ public class CameraDrag : MonoBehaviour
 
 	void Update()
     {
-        if (Input.GetMouseButton(0))
+        if (Input.GetMouseButton(1) || Input.GetMouseButton(2))
         {
             if (clickOrigin == Vector3.zero)
             {
@@ -24,7 +24,7 @@ public class CameraDrag : MonoBehaviour
             dragOrigin = Input.mousePosition;
         }
 
-        if (!Input.GetMouseButton(0))
+        if (!Input.GetMouseButton(1) && !Input.GetMouseButton(2))
         {
             clickOrigin = Vector3.zero;
             return;

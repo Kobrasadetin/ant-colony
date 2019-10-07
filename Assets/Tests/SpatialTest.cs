@@ -20,13 +20,9 @@ namespace Tests
 				{
 					return list;
 				}
-				float treshold = range * range;
 				foreach (T model in fromList)
 				{
-					//TODO space partition
-					Vector2 v = position - model.Position;
-					float d2 = (v.x * v.x + v.y * v.y);
-					if (d2 < treshold)
+					if ((position - model.Position).magnitude < range)
 					{
 						list.Add(model);
 					}
@@ -70,6 +66,42 @@ namespace Tests
 			Assert.AreEqual(1, result.Count);
 		
 		}
+		[Test]
+		public void SpatialTestMultipleAdjoinedPasses()
+		{
+			System.Random Rand = new System.Random(911);
+			List<PheromoneModel> original20 = new List<PheromoneModel>();
+			List<PheromoneModel> pheromones = new List<PheromoneModel>();
+			SpacePartitionList<PheromoneModel> pheromonesSP = new SpacePartitionList<PheromoneModel>();
+			for (int i = 0; i < 20; i++)
+			{
+				PheromoneModel p = new PheromoneModel();
+				p.Position = new Vector2((float)Rand.NextDouble() * 10 - 5 + 20, (float)Rand.NextDouble() * 10 - 5 + 20);
+				original20.Add(p);
+				pheromones.Add(p);
+				pheromonesSP.Add(p);
+				for (int j = 0; j < 8; j++)
+				{
+					PheromoneModel neighbor = new PheromoneModel();
+					neighbor.Position = p.Position+new Vector2((float)Rand.NextDouble() * 0.2f - 0.1f, (float)Rand.NextDouble() * 0.2f - 0.1f);
+					pheromones.Add(neighbor);
+					pheromonesSP.Add(neighbor);
+				}
+			}
+			foreach (var phero in original20)
+			{
+				List<PheromoneModel> inRange = Search<PheromoneModel>.ObjectsInRange(pheromones, phero.Position, 0.06f);
+				List<PheromoneModel> result = pheromonesSP.FindInRange(phero.Position, 0.06f);
+				Assert.AreEqual(inRange.Count, result.Count);
+				foreach (PheromoneModel model in inRange)
+				{
+					Assert.That(result.Contains(model));
+				}
+				Debug.Log(phero.Position.x + ", " + phero.Position.y + ":" +result.Count);
+			}
+
+		}
+
 
 		[Test]
 		public void SpatialTestSimpleCachePasses()
@@ -129,12 +161,7 @@ namespace Tests
 				PheromoneModel p = new PheromoneModel();
 				Vector2 randomPos = new Vector2((float)Rand.NextDouble() * 50 - 25, (float)Rand.NextDouble() * 50 - 25);
 				List<PheromoneModel> inRange = Search<PheromoneModel>.ObjectsInRange(pheromones, randomPos, MAX_TEST_RANGE);
-				List<PheromoneModel> result;
-				if (i == 5)
-				{
-					result = pheromonesSP.FindInRange(randomPos, MAX_TEST_RANGE);
-				}
-				result = pheromonesSP.FindInRange(randomPos, MAX_TEST_RANGE);
+				List<PheromoneModel> result = pheromonesSP.FindInRange(randomPos, MAX_TEST_RANGE);
 				Assert.AreEqual(inRange.Count, result.Count);
 				foreach(PheromoneModel model in inRange){
 					Assert.That(result.Contains(model));

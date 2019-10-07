@@ -12,8 +12,9 @@ public class PheromoneModel : BasicModel
 	private float confusion = 0.0f;
 	private float strength = 1.0f;
     public bool IsRepellant = false;
+	public bool IsAttract = false;
 
-    public PheromoneModel()
+	public PheromoneModel()
     {
         Radius = PHEROMONE_RADIUS;
     }

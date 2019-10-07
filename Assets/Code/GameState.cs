@@ -4,10 +4,16 @@ using UnityEngine;
 
 public class GameState
 {
-    public const int INITIAL_ANTS = 42;
+    public const int INITIAL_ANTS = 1;
     public const int INITIAL_FOOD = 0;
-    public const int RANDOM_PHEROMONES = 10;
-    private AnthillModel playerAnthill;
+	public float INITIAL_REPELLANT_STRENGTH = 0.33f;
+	public float INITIAL_ATTRACT_STRENGTH = 0.25f;
+	public const int RANDOM_PHEROMONES = 10;
+	public const float REPELLANT_DIST = 0.1f;
+	public const float REPELLANT_REMOVE_DIST = 0.1f;
+	public const float ATTRACT_REMOVE_DIST = 0.1f;
+	public const float ATTRACT_DIST = 0.08f;
+	private AnthillModel playerAnthill;
     private List<AntModel> ants;
     private List<FoodModel> foods;
 	private List<SourceModel> sources;
@@ -33,7 +39,6 @@ public class GameState
             ant.RandomOrientation();
 
             ant.MoveForward(Random.Range(0, Random.Range( 0f, playerAnthill.Radius)));
-            ant.WalkingTarget = playerAnthill;
             ants.Add(ant);
         }
 
@@ -54,18 +59,56 @@ public class GameState
 
     public void AddRepellantPheromone(Vector2 position)
     {
-        List<PheromoneModel> closeByPheromones = Pheromones.FindInRange(position, 0.3f);
-            foreach(PheromoneModel pher in closeByPheromones)
-            {
-                pheromones.Remove(pher);
-            }
-        PheromoneModel newPhero = new PheromoneModel();
-        newPhero.Position = position;
-        newPhero.IsRepellant = true;
-        newPhero.HomeDistance = float.MaxValue;
-        newPhero.FoodDistance = float.MaxValue;
-        pheromones.Add(newPhero);
+		float closestRepellant = float.MaxValue;	
+		List<PheromoneModel> closeByPheromones = Pheromones.FindInRange(position, REPELLANT_REMOVE_DIST);
+		foreach (PheromoneModel pher in closeByPheromones)
+        {
+			if (pher.IsRepellant)
+			{
+				closestRepellant = Mathf.Min(Vector2.Distance(pher.Position, position), closestRepellant);
+			}
+			else
+			{
+				pheromones.Remove(pher);
+			}
+        }
+		if (closestRepellant > REPELLANT_DIST)
+		{
+			PheromoneModel newPhero = new PheromoneModel();
+			newPhero.Position = position;
+			newPhero.Strength = INITIAL_REPELLANT_STRENGTH;
+			newPhero.IsRepellant = true;
+			newPhero.HomeDistance = float.MaxValue;
+			newPhero.FoodDistance = float.MaxValue;
+			pheromones.Add(newPhero);
+		}
     }
+	public void AddAttractPheromone(Vector2 position)
+	{
+		float closestAttract = float.MaxValue;
+		List<PheromoneModel> closeByPheromones = Pheromones.FindInRange(position, ATTRACT_REMOVE_DIST);
+		foreach (PheromoneModel pher in closeByPheromones)
+		{
+			if (pher.IsAttract)
+			{
+				closestAttract = Mathf.Min(Vector2.Distance(pher.Position, position), closestAttract);
+			}
+			else
+			{
+				pheromones.Remove(pher);
+			}
+		}
+		if (closestAttract > ATTRACT_DIST)
+		{
+			PheromoneModel newPhero = new PheromoneModel();
+			newPhero.Position = position;
+			newPhero.Strength = INITIAL_ATTRACT_STRENGTH;
+			newPhero.IsAttract = true;
+			newPhero.HomeDistance = float.MaxValue;
+			newPhero.FoodDistance = float.MaxValue;
+			pheromones.Add(newPhero);
+		}
+	}
 
 	public void AddFoodSource(Vector2 position, float nutrition, float poison){
 		sources.Add(new SourceModel(position, nutrition, poison));
@@ -86,11 +129,7 @@ public class GameState
             } else {
 				pickUpFoods(ant);
 			}
-			ant.DecideMission();
-            ant.DecideRotation();
-            ant.WalkForward();
-            ant.PheromoneActions(this);
-			ant.AdvanceTime();
+			ant.TickActions(this);
 			if (ant.IsDead()){
 				deadAnts.Add(ant);
 				ant.Die();
@@ -224,8 +263,8 @@ public class GameState
 
             }
 			ant.KnownNearestFood = nearestFood;
-
 		}
+
     }
 
     public int AntCount()
