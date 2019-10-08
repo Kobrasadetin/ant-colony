@@ -6,17 +6,41 @@ public class FoodModel : EntityModel
 {
     private float nutritionValue;
     private float poisonValue;
+	public int BuildingBlockValue = 0;
 	public const float DEFAULT_RADIUS = 0.05f;
 	public Type type;
 	public enum Type
 	{
 		NONE,
+		DEAD_ANT,
+		APPLE,
+		PURPLE,
+		RED,
+		PINE,
+		BONE,
+		WASP,
+		CUBE,
 		BREAD,
-		DEAD_ANT
+		BREAD2,
+		STICK,
+		WASTE,
+		WASTE2,
+		BLUE,
+		LIGHT_PURPLE,
+		DARK_PURPLE,
+		MUSHROOM
 	}
 
 	public static FoodModel DeadAnt(AntModel fromAnt){
 		return new FoodModel(Type.DEAD_ANT, fromAnt.Position, DEFAULT_RADIUS, 1.0f - fromAnt.Hunger + 0.1f, fromAnt.Poison);
+	}
+
+	public FoodModel(Vector2 position, FoodModel other) : base(other.Radius)
+	{
+		this.type = other.type;
+		this.nutritionValue = other.nutritionValue;
+		this.poisonValue = other.poisonValue;
+		this.Position = position;
 	}
 
 	public FoodModel(Type type, Vector2 position, float radius, float nutritionValue, float poisonValue) : base(radius)

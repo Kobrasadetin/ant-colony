@@ -95,7 +95,20 @@ MonoBehaviour:
   deadAnt: {fileID: 1148204736732887546, guid: 1b3574263064a9c42bcf3594dae2c14e, type: 3}
   foodSprites:
   - {fileID: 0}
-  - {fileID: 21300000, guid: 1f78d764a7c91ab48855538f8a26d4e9, type: 3}
   - {fileID: 21300000, guid: 23b6560727b2d33428c58ec2b8b0cda0, type: 3}
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 21300000, guid: d9f661df8ee514c43aacff6a2a8946c4, type: 3}
+  - {fileID: 21300000, guid: a1a37f2967f5fc245a5ffc08adb87b92, type: 3}
+  - {fileID: 21300000, guid: b29efdf236602bc47b5ef21b1cc76ee5, type: 3}
+  - {fileID: 21300000, guid: 12ed166479a45bd42bf63c7034d17881, type: 3}
+  - {fileID: 21300000, guid: de29f1385b8ba284ab5d2d8f68776cb0, type: 3}
+  - {fileID: 21300000, guid: 4c241d2e85f96404c8ecdc9e3f0fdc9b, type: 3}
+  - {fileID: 21300000, guid: 157c83e7783cb7944bc633c9f3cbd95d, type: 3}
+  - {fileID: 21300000, guid: 128f547b74d46754f8f2872548b70f51, type: 3}
+  - {fileID: 21300000, guid: 1f78d764a7c91ab48855538f8a26d4e9, type: 3}
+  - {fileID: 21300000, guid: 00ea5777b562b3c4fa2e2c49bf5a6ae3, type: 3}
+  - {fileID: 21300000, guid: 5647f9b9bfe9c394ca76266883a8f5c3, type: 3}
+  - {fileID: 21300000, guid: 8fa6f713b0f141c44898d7626a764bdc, type: 3}
+  - {fileID: 21300000, guid: f7baf03069fe136448767c698cac2eee, type: 3}
+  - {fileID: 21300000, guid: 1ca0b10c831a0f5478fa95cd78044568, type: 3}
+  - {fileID: 21300000, guid: 769174c9127c8ab489e50cc18b6d1b00, type: 3}
+  - {fileID: 21300000, guid: 6ea525429ec57234890d33555b3fbb74, type: 3}

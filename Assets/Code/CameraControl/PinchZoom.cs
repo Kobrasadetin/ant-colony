@@ -64,6 +64,6 @@ public class PinchZoom : MonoBehaviour
                 mainCamera.fieldOfView = Mathf.Clamp(mainCamera.fieldOfView, 0.1f, 179.9f);
             }
         }
-		mainCamera.orthographicSize = Mathf.Clamp(mainCamera.orthographicSize, 0.1f, 50f);
+		mainCamera.orthographicSize = Mathf.Clamp(mainCamera.orthographicSize, 0.8f, 30f);
 	}
 }

@@ -4,13 +4,14 @@ using UnityEngine;
 
 public class AnthillModel: EntityModel
 {
-    private int health = 3;
-	private int healthChanged;
+	private int buildingBlocks = 0;
+    private int happiness = 0;
+	private int happinessChanged;
 	private float foodStorage = 99f;
 
-    public int Health { get => health; set { HealthChanged = value-health;  health = value; } }
+    public int Happiness { get => happiness; set { HappinessChange = value-happiness;  happiness = value; } }
 
-	public int HealthChanged { get => healthChanged; private set => healthChanged = value; }
+	public int HappinessChange { get => happinessChanged; private set => happinessChanged = value; }
 	public float FoodStorage { get => foodStorage; }
 	
 	public float DecreaseFood(float amount)
@@ -29,7 +30,7 @@ public class AnthillModel: EntityModel
 
     }
 	public void update() {
-		HealthChanged = 0;
+		HappinessChange = 0;
 	}
 	
 

@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class GameState
 {
-    public const int INITIAL_ANTS = 1;
-    public const int INITIAL_FOOD = 0;
+    public const int INITIAL_ANTS = 5;
+    public const int INITIAL_FOOD = 16;
 	public float INITIAL_REPELLANT_STRENGTH = 0.33f;
 	public float INITIAL_ATTRACT_STRENGTH = 0.25f;
 	public float NEW_ATTRACT_STRENGTH_TRSHLD = 0.02f;
@@ -22,13 +22,15 @@ public class GameState
 	private SpacePartitionList<PheromoneModel> pheromones;
     private int tickCounter = 0;
 
+	public LevelSettings levelSettings;
     public AnthillModel PlayerAnthill { get => playerAnthill; set => playerAnthill = value; }
     public List<AntModel> Ants { get => ants; set => ants = value; }
     public int TickCounter { get => tickCounter; set => tickCounter = value; }
     public List<FoodModel> Foods { get => foods; set => foods = value; }
     public SpacePartitionList<PheromoneModel> Pheromones { get => pheromones; set => pheromones = value; }
+	public List<SourceModel> Sources { get => sources; set => sources = value; }
 
-    public GameState()
+	public GameState()
     {
         playerAnthill = new AnthillModel();
         ants = new List<AntModel>();
@@ -43,9 +45,9 @@ public class GameState
         for (int i = 0; i < INITIAL_FOOD; i++)
         {
 			Vector2 position = Vector2.zero;
-			while ((position - playerAnthill.Position).magnitude < 1.5f)
+			while ((position - playerAnthill.Position).magnitude < 2.5f)
 			{
-				position = Random.insideUnitCircle * 5;
+				position = Random.insideUnitCircle * 12;
 			}
 
 			//Foods.Add(new FoodModel(position, 0.05f));
@@ -158,6 +160,9 @@ public class GameState
 			phero.update();
 		}
 		pheromones.RemoveAll(pheromone => pheromone.IsOld());
+
+		sources.RemoveAll(source => source.IsExhausted());
+
 		tickCounter++;
         
     }
@@ -250,17 +255,21 @@ public class GameState
 				FoodModel food = (FoodModel)dropped;
 				if (food.NutritionValue > food.PoisonValue){
 					//good food
-					playerAnthill.Health += 1;
+					playerAnthill.Happiness += 1;
 					playerAnthill.IncreaseFood( food.NutritionValue );
 				}
 				if (food.NutritionValue < food.PoisonValue)
 				{
 					//bad food
-					playerAnthill.Health -= 1;
+					playerAnthill.Happiness -= 1;
+				}
+				if (food.BuildingBlockValue > 0)
+				{
+					//bad food
+					playerAnthill.Happiness += 1;
 				}
 				foods.Remove(food);
 			}
-            //TODO deal with dropped food
         }
 		//eat
 		float antHunger = ant.Hunger;

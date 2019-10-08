@@ -330,8 +330,9 @@ public partial class AntModel : EntityModel
 	{
 		if (entity.IsFood() && entity.CarriedBy == null)
 		{
+			FoodModel food = (FoodModel)entity;
 			RemoveConfusion();
-			foodDistanceMemory = 0.0f;
+			if (food.type != FoodModel.Type.DEAD_ANT) foodDistanceMemory = 0.0f;
 			entity.CarriedBy = this;
 			Carrying = entity;
 		}

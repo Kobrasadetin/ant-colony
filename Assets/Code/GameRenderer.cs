@@ -10,11 +10,13 @@ public class GameRenderer : MonoBehaviour
 	public GameState gameState;
 	private Dictionary<EntityModel, VisualStatus> modelMap;
 	private Dictionary<PheromoneModel, VisualStatus> pheroMap;
+
 	public GameObject playerAnthillPrefab;
 	public GameObject antPrefab;
-
 	public GameObject foodPrefab;
-	public GameObject pheromonePrefab;
+	//public GameObject pheromonePrefab;
+	public GameObject sourcePrefab;
+
 	public AudioClip hatchingSound;
 	public AudioClip spraySound;
 
@@ -33,6 +35,7 @@ public class GameRenderer : MonoBehaviour
 	private PheromoneSprayControl pheromoneSprayControl;
 	private int SpraySoundDelay = 0;
 	private GameInfo gameInfo;
+	private CameraDrag cameraDragControl;
 
 	public GameOptions Options { get => options; set => options = value; }
 
@@ -50,6 +53,7 @@ public class GameRenderer : MonoBehaviour
 	// Start is called before the first frame update
 	private void Start()
 	{
+		cameraDragControl = FindObjectOfType<CameraDrag>();
 		gameInfo = gameObject.GetComponentInChildren<GameInfo>();
 		pheromoneSprayControl = gameObject.GetComponentInChildren<PheromoneSprayControl>();
 		pheromoneRenderer = gameObject.GetComponent<PheroParticleRender>();
@@ -100,6 +104,10 @@ public class GameRenderer : MonoBehaviour
 	// Update is called once per frame
 	private void Update()
 	{
+		cameraDragControl.DragEnabled = false;
+		if (pheromoneSprayControl.ActiveButton == PheromoneSprayControl.SprayButton.NONE){
+			cameraDragControl.DragEnabled = true;
+		}
 		SpraySoundDelay++;
 		if (paused)
 		{
@@ -231,11 +239,29 @@ public class GameRenderer : MonoBehaviour
 			}
 			else
 			{
-				// Found a new ant!
+				// Found a new food!
 				Food newFood = Instantiate(foodPrefab, transform).GetComponent<Food>();
 				newFood.initializeState(foodModel);
 				renderObjects.Add(newFood);
 				modelMap.Add(foodModel, new VisualStatus(false, newFood));
+			}
+		}
+
+		//draw sources
+		foreach (SourceModel sourceModel in gameState.Sources)
+		{
+			if (modelMap.TryGetValue(sourceModel, out VisualStatus outSource))
+			{
+				outSource.renderObject.updateState(sourceModel);
+				outSource.removed = false;
+			}
+			else
+			{
+				// Found a new source!
+				Source newSource = Instantiate(sourcePrefab, transform).GetComponent<Source>();
+				newSource.initializeState(sourceModel);
+				renderObjects.Add(newSource);
+				modelMap.Add(sourceModel, new VisualStatus(false, newSource));
 			}
 		}
 

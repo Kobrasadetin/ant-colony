@@ -30,7 +30,7 @@ public class PheromoneModel : BasicModel
 
 	public void update()
 	{
-		strength *= 0.999f;
+		strength -= 0.0001f;
 		Confusion *= 0.99f;
 	}
 
