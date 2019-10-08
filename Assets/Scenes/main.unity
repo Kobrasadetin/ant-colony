@@ -10547,8 +10547,8 @@ MonoBehaviour:
     type: 3}
   antPrefab: {fileID: 3676060839330064323, guid: a593759023703a8438579ad01256d904,
     type: 3}
-  foodObjects:
-  - {fileID: 3981369027108589388, guid: 958cfb973989e2248996840c851bba67, type: 3}
+  foodPrefab: {fileID: 3981369027108589388, guid: 958cfb973989e2248996840c851bba67,
+    type: 3}
   pheromonePrefab: {fileID: 865933043316373304, guid: cc994dbb406d99048b2f09206c609764,
     type: 3}
   hatchingSound: {fileID: 8300000, guid: acc75ac4938d7bf44890623b3bdb5457, type: 3}

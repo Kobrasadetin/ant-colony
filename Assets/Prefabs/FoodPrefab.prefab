@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 5598217816891497764}
   - component: {fileID: 5445081461674784889}
   m_Layer: 0
-  m_Name: food
+  m_Name: FoodPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -69,7 +69,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 1f78d764a7c91ab48855538f8a26d4e9, type: 3}
+  m_Sprite: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -77,7 +77,7 @@ SpriteRenderer:
   m_Size: {x: 1.28, y: 1.28}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
+  m_WasSpriteAssigned: 0
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!114 &5445081461674784889
@@ -92,3 +92,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f25f734daefea04f8be63ee27440495, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  deadAnt: {fileID: 1148204736732887546, guid: 1b3574263064a9c42bcf3594dae2c14e, type: 3}
+  foodSprites:
+  - {fileID: 0}
+  - {fileID: 21300000, guid: 1f78d764a7c91ab48855538f8a26d4e9, type: 3}
+  - {fileID: 21300000, guid: 23b6560727b2d33428c58ec2b8b0cda0, type: 3}
+  - {fileID: 0}
+  - {fileID: 0}

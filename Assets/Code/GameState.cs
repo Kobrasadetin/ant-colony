@@ -149,6 +149,7 @@ public class GameState
 			if (ant.IsDead()){
 				deadAnts.Add(ant);
 				ant.Die();
+				foods.Add(FoodModel.DeadAnt(ant));
 			}
         }
 		ants.RemoveAll(ant => deadAnts.Contains(ant));

@@ -5,24 +5,16 @@ using Unity;
 
 public class RenderObject : MonoBehaviour
 {
-    // Start is called before the first frame update
-    public virtual void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    public virtual void Update()
-    {
-        
-    }
-
 	public void remove()
 	{
 		Destroy(gameObject);
 	}
 
-	public void updatePosition(EntityModel model)
+	public virtual void initializeState(EntityModel model)
+	{
+		updateState(model);
+	}
+	public virtual void updateState(EntityModel model)
     {
         this.transform.position = new Vector3(model.Position.x, model.Position.y, transform.position.z);
         this.transform.eulerAngles = new Vector3( 0, 0 , model.Rotation * Mathf.Rad2Deg);

@@ -17,9 +17,8 @@ public class Anthill : RenderObject
 	AudioClip good;
 	AudioClip bad;
 
-	public override void Start()
+	public void Start()
 	{
-		base.Start();
 		good = Resources.Load("sound/positive") as AudioClip;
 		bad = Resources.Load("sound/negative") as AudioClip;
 		audioSource = gameObject.AddComponent<AudioSource>();

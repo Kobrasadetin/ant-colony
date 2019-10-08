@@ -39,6 +39,7 @@ public partial class AntModel : EntityModel
 	public FoodModel KnownNearestFood { get => knownNearestFood; set => knownNearestFood = value; }
 	public float Hunger => hunger;
 	public float Health { get => health; set => health = value; }
+	public float Poison { get => poison; }
 
 	public void IncreaseHunger(float amount)
 	{

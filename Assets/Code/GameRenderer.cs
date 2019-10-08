@@ -13,7 +13,7 @@ public class GameRenderer : MonoBehaviour
 	public GameObject playerAnthillPrefab;
 	public GameObject antPrefab;
 
-	public GameObject[] foodObjects;
+	public GameObject foodPrefab;
 	public GameObject pheromonePrefab;
 	public AudioClip hatchingSound;
 	public AudioClip spraySound;
@@ -226,16 +226,16 @@ public class GameRenderer : MonoBehaviour
 		{
 			if (modelMap.TryGetValue(foodModel, out VisualStatus outFood))
 			{
-				outFood.renderObject.updatePosition(foodModel);
+				outFood.renderObject.updateState(foodModel);
 				outFood.removed = false;
 			}
 			else
 			{
 				// Found a new ant!
-				Food newFood = Instantiate(foodObjects[0], transform).GetComponent<Food>();
+				Food newFood = Instantiate(foodPrefab, transform).GetComponent<Food>();
+				newFood.initializeState(foodModel);
 				renderObjects.Add(newFood);
 				modelMap.Add(foodModel, new VisualStatus(false, newFood));
-				newFood.updatePosition(foodModel);
 			}
 		}
 
