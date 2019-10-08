@@ -15,7 +15,7 @@ public class CameraDrag : MonoBehaviour
 
 	void Update()
     {
-		if (DragEnabled)
+		if (DragEnabled && Input.touchCount == 1)
 		{
 			if (Input.GetMouseButton(0) || Input.GetMouseButton(2))
 			{
@@ -32,7 +32,7 @@ public class CameraDrag : MonoBehaviour
 				clickOrigin = Vector3.zero;
 				return;
 			}
-			Vector3 newPosition = new Vector3(basePos.x + ((clickOrigin.x - dragOrigin.x) * .008f * cam.orthographicSize), basePos.y + ((clickOrigin.y - dragOrigin.y) * .008f * cam.orthographicSize), cam.transform.position.z);
+			Vector3 newPosition = new Vector3(basePos.x + ((clickOrigin.x - dragOrigin.x) * .0008f * cam.orthographicSize), basePos.y + ((clickOrigin.y - dragOrigin.y) * .0008f * cam.orthographicSize), cam.transform.position.z);
 			newPosition = new Vector3(Mathf.Clamp(newPosition.x, -20, 20), Mathf.Clamp(newPosition.y, -20, 20), newPosition.z);
 			transform.position = newPosition;
 		}
