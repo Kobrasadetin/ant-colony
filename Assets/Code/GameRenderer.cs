@@ -36,6 +36,7 @@ public class GameRenderer : MonoBehaviour
 	private int SpraySoundDelay = 0;
 	private GameInfo gameInfo;
 	private CameraDrag cameraDragControl;
+    private HashSet<Object> activeUIPanels = new HashSet<Object>();
 
 	public GameOptions Options { get => options; set => options = value; }
 
@@ -69,7 +70,7 @@ public class GameRenderer : MonoBehaviour
 		gameStateInitializer(gameState);
 		playerAnthill = Instantiate(playerAnthillPrefab, transform).GetComponent<Anthill>();
 		playerAnthill.transform.position = gameState.PlayerAnthill.Position;
-	}
+    }
 
 	internal void Pause()
 	{
@@ -123,10 +124,11 @@ public class GameRenderer : MonoBehaviour
 		{
 			PointerEventData pointerEventData = new PointerEventData(EventSystem.current);
 			GameObject clicked = EventSystem.current.currentSelectedGameObject;
-			if (clicked != null && clicked.GetComponent<UIClickable>() != null)
+			if ((clicked != null && clicked.GetComponent<UIClickable>() != null) || activeUIPanels.Count > 0)
 			{
-				//ui button click
-			}
+                //ui steals the click
+                cameraDragControl.DragEnabled = false;
+            }
 			else
 			{
 				if (pheromoneSprayControl.ActiveButton == PheromoneSprayControl.SprayButton.REPEL)
@@ -197,7 +199,20 @@ public class GameRenderer : MonoBehaviour
 		};
 	}
 
-	private void updateVisuals()
+    public void AddActivePanel(Object panel)
+    {
+        activeUIPanels.Add(panel);
+    }
+
+    public void RemoveActivePanel(Object panel)
+    {
+        if (activeUIPanels.Contains(panel))
+        {
+            activeUIPanels.Remove(panel);
+        }
+    }
+
+    private void updateVisuals()
 	{
 		gameInfo.setGameInfo(gameState);
 		foreach (KeyValuePair<EntityModel, VisualStatus> kvPair in modelMap)
